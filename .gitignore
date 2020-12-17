@@ -6,6 +6,7 @@
 
 *.root
 .nsf*
+.nfs*
 *.swp
 *.swo
 index.php
