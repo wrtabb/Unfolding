@@ -367,12 +367,13 @@ TH1F*Unfold::unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse)
 	//Here I am assuming the reco has twice as many bins as tru
 	//This is because this is what I'm using for this specific task
 	//This would have to be treated differently if this wasn't the case
-	hReco->Rebin(2);//need to update this to use custom rebin function
+	TH1D*hRecoRebin = (TH1D*)hReco->Clone("hRecoRebin");
+	hRecoRebin->Rebin(2);//need to update this to use custom rebin function
 
 	//Turn histograms into matrices and vectors
 	TMatrixD responseM = makeMatrixFromHist(hResponse);
 	TVectorD trueV = makeVectorFromHist(hTrue);
-	TVectorD recoV = makeVectorFromHist(hReco);
+	TVectorD recoV = makeVectorFromHist(hRecoRebin);
 
 	//Invert
 	TMatrixD invertedM = responseM.Invert();

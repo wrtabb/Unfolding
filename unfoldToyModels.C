@@ -14,6 +14,8 @@ void unfoldToyModels()
 	Unfold*toyUnfold = new Unfold();
 	Unfold::RegType regType = toyUnfold->NO_REG;
 	Unfold::UnfoldType unfoldType = toyUnfold->TUNFOLD;
-	TH1F*hTUnfoldClosure = toyUnfold->unfoldTUnfold(regType,hClosure,hTrue,hMatrix);
-	toyUnfold->plotUnfolded(hClosure,hTrue,hTUnfoldClosure,unfoldType,true);	
+	//TH1F*hTUnfoldClosure = toyUnfold->unfoldTUnfold(regType,hClosure,hTrue,hMatrix);
+	TH1F*hInversionClosure = toyUnfold->unfoldInversion(hClosure,hTrue,hResponse);
+	//toyUnfold->plotUnfolded(hClosure,hTrue,hTUnfoldClosure,unfoldType,true);	
+	toyUnfold->plotUnfolded(hClosure,hTrue,hInversionClosure,unfoldType,true);	
 }
