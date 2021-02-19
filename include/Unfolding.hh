@@ -45,21 +45,20 @@ class Unfold
 		};
 		//-----Functions-----//
 		Unfold();
-		void makeToyModels(double mean,double xlow,double xhigh,int nBinsReco);
-		void plotUnfolded(TH1D*hReco,TH1D*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
+		void plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
 				  bool closure);
-		TH1F*unfoldTUnfold(RegType regType,TH1D*hReco,TH1D*hTrue,TH2D*hMatrix);
-		TH1F*unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse);
-		void plotMatrix(TH2D*hMatrix,TString saveName,bool printCondition);
-		double GetConditionNumber(TH2D*hResponse);
-		TMatrixD makeMatrixFromHist(TH2D*hist);
-		TVectorD makeVectorFromHist(TH1D*hist);
-		TH2D*makeResponseMatrix(TH2D*hist);
-		TH1F*makeHistFromVector(TVectorD vec,TH1D*hist);
-		TH2*RebinTH2(TH2*hist,TString histName,std::vector<double> binning);
-		TH2*RebinTH2(TH2*hist,TString histName,TH2*hBinning);
-		TH1*RebinTH1(TH1*hist,TString histName,std::vector<double> binning);
-		TH1*RebinTH1(TH1*hist,TString histName,TH1*hBinning);
+		TH1F*unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
+		TH1F*unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hResponse);
+		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);
+		double GetConditionNumber(TH2F*hResponse);
+		TMatrixD makeMatrixFromHist(TH2F*hist);
+		TVectorD makeVectorFromHist(TH1F*hist);
+		TH2F*makeResponseMatrix(TH2F*hist);
+		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
+		TH2F*RebinTH2(TH2F*hist,TString histName,std::vector<double> binning);
+		TH2F*RebinTH2(TH2F*hist,TString histName,TH2F*hBinning);
+		TH1F*RebinTH1(TH1F*hist,TString histName,std::vector<double> binning);
+		TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning);
 
 };//end class Unfold
 

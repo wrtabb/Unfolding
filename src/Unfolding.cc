@@ -5,90 +5,7 @@ Unfold::Unfold()
 
 }
 
-//Makes model with a Gaussian peak on top of a 1/x function
-//Choose desired mean, domain, and number of reco bins
-//Function assumes reco bins are twice the number of true bins
-void Unfold::makeToyModels(double mean,double xlow,double xhigh,int nBinsReco)
-{
-	cout << endl;
-	cout << "*************************************" << endl;
-	cout << "Creating toy models to test unfolding" << endl;
-	cout << "*************************************" << endl;
- 	cout << endl;
-	
-	int nBinsTrue = nBinsReco/2;
-	//measured distribution
-	TH1D*hReco =        new TH1D("hReco","",nBinsReco,xlow,xhigh);
-	//measured distribution using same seed as migration matrix
- 	TH1D*hRecoClosure = new TH1D("hClosure","",nBinsReco,xlow,xhigh);	
-	//true distribution
-	TH1D*hTrue =        new TH1D("hTrue","",nBinsTrue,xlow,xhigh);
-	//2D matrix of true versus reco distributions
-	TH2D*hMatrix =      new TH2D("hMatrix","",nBinsTrue,xlow,xhigh,nBinsReco,xlow,xhigh);
-
-	//-----Parameters for toy model-----//
-	const double sigma = 5;//Sigma of gaussian part of distribution
-	const double mean_smeared = 0;//mean of smearing used to make reco
-	const double sigma_smeared = 1.0;//sigma of smearing used to make reco
-	const Long64_t nEntries = 1e7;//number of entries	
-
-	//-----Function model-----//
-	TF1*func = new TF1("func","1/(x+1)+gaus(0)",0,50);
-	func->SetParameters(1.0,mean,sigma);
-
-	TRandom3 gen1;
-	TRandom3 gen2;
-	gen1.SetSeed(82);
-	gen2.SetSeed(1981);
-
-	//-----Save for later retrieval-----//
-	TFile*saveFile = new TFile("data/toyModelDistributions.root","recreate");	
-
-	//-----Fill distributions with random numbers-----//
-	double peak,peakReco,peak_smeared,peakReco_smeared;
-	for(int i=0;i<nEntries;i++){
- 		peak = func->GetRandom();
- 		peakReco = func->GetRandom();
- 		peak_smeared = peak+gen1.Gaus(mean_smeared,sigma_smeared);
- 		peakReco_smeared = peakReco+gen2.Gaus(mean_smeared,sigma_smeared);
-
- 		hRecoClosure->Fill(peak_smeared);
- 		hReco->Fill(peakReco_smeared);
- 		hTrue->Fill(peak);
- 		hMatrix->Fill(peak,peak_smeared);
-	}//end loop over entries
-
-	//
-	TH2D*hResponse = makeResponseMatrix(hMatrix);
-	hMatrix->GetYaxis()->SetTitle("reco");
-	hMatrix->GetXaxis()->SetTitle("true");
-	hResponse->GetYaxis()->SetTitle("reco");
-	hResponse->GetXaxis()->SetTitle("true");
-	int meanName = mean;
-	int binName = nBinsReco;
-	TString matrixSaveName = "migrationMatrix_Mean";
-	matrixSaveName += meanName;
-	matrixSaveName += "_RecoBins";
-	matrixSaveName += nBinsReco;
-	plotMatrix(hMatrix,matrixSaveName,false);
-
-	TString responseSaveName = "responseMatrix_Mean";
-	responseSaveName += meanName;
-	responseSaveName += "_RecoBins";
-	responseSaveName += nBinsReco;
-	plotMatrix(hResponse,responseSaveName,true);
-
-	//-----Save the distributions-----//
-	saveFile->cd();
-	hReco->Write();
-	hRecoClosure->Write();
-	hTrue->Write();
-	hMatrix->Write();
-	hResponse->Write();
-	saveFile->Close();
-}//end makeToyModels
-
-TH1F* Unfold::unfoldTUnfold(RegType regType,TH1D*hReco,TH1D*hTrue,TH2D*hMatrix)
+TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 {
 	cout << endl;
 	cout << "*****************************************" << endl;
@@ -97,6 +14,14 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1D*hReco,TH1D*hTrue,TH2D*hMatrix)
 	cout << endl;
 
 	TH1F*hBlank = new TH1F("hBlank","",1,0,1);
+	int nBinsReco = hReco->GetNbinsX();
+	int nBinsTrue = hTrue->GetNbinsX();
+
+	if(nBinsReco==nBinsTrue){
+		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
+		cout << "Closing unfolding script" << endl;
+		return hBlank;
+	}
 
 	////////////////////////////
 	//  Regularization Modes  //
@@ -123,8 +48,8 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1D*hReco,TH1D*hTrue,TH2D*hMatrix)
 	/////////////////////////////////////
 	//  Horizontal vs Vertical Output  //
 	/////////////////////////////////////
-	//TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputVert;
-	TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputHoriz;
+	TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputVert;
+	//TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputHoriz;
 	
 	//////////////////////////////////////
 	//  Constructor for TUnfoldDensity  //
@@ -190,14 +115,14 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1D*hReco,TH1D*hTrue,TH2D*hMatrix)
 	return hUnfoldedE;
 }//end unfoldTUnfold
 
-void Unfold::plotUnfolded(TH1D*hReco,TH1D*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
+void Unfold::plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
 			  bool closure)
 {
 	gStyle->SetOptStat(0);
 	gROOT->SetBatch(true);
 	//if hReco is from TUnfold, it has more bins that hTrue and needs to be 
 	//rebinned for plotting
-	TH1D*hRecoRebin = (TH1D*)hReco->Clone("hRecoRebin");
+	TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
 	//need to update custom rebinning function to calculate error and use it here
 	if(unfoldType==TUNFOLD) hRecoRebin->Rebin(2);; 
 
@@ -216,7 +141,7 @@ void Unfold::plotUnfolded(TH1D*hReco,TH1D*hTrue,TH1F*hUnfoldedE,UnfoldType unfol
 	hTrue->SetTitleSize(0);
 
 	//Ratio of unfolded histogram over true histogram
-	TH1D*ratio = (TH1D*)hUnfoldedE->Clone("ratio");
+	TH1F*ratio = (TH1F*)hUnfoldedE->Clone("ratio");
 	ratio->Divide(hTrue);
 
 	double xChiLabel = 35;
@@ -256,32 +181,32 @@ void Unfold::plotUnfolded(TH1D*hReco,TH1D*hTrue,TH1F*hUnfoldedE,UnfoldType unfol
 	pad2->SetTicks(1,1);
 	pad2->Draw();
 	pad2->cd();
-	//ratio->SetMinimum(0.7);
-	//ratio->SetMaximum(1.3);
-	//ratio->GetYaxis()->SetLabelSize(0.06);
-	//ratio->GetYaxis()->SetTitleSize(0.08);
-	//ratio->GetYaxis()->SetTitleOffset(0.3);
-	//ratio->GetYaxis()->SetTitle("Unfolded/Truth");
-	//ratio->GetXaxis()->SetLabelSize(0.1);
-	//ratio->GetXaxis()->SetTitleSize(0.1);
-	//ratio->SetMarkerStyle(20);
-	//ratio->SetMarkerColor(kBlack);
+	ratio->SetMinimum(0.7);
+	ratio->SetMaximum(1.3);
+	ratio->GetYaxis()->SetLabelSize(0.06);
+	ratio->GetYaxis()->SetTitleSize(0.08);
+	ratio->GetYaxis()->SetTitleOffset(0.3);
+	ratio->GetYaxis()->SetTitle("Unfolded/Truth");
+	ratio->GetXaxis()->SetLabelSize(0.1);
+	ratio->GetXaxis()->SetTitleSize(0.1);
+	ratio->SetMarkerStyle(20);
+	ratio->SetMarkerColor(kBlack);
 	line->Draw();
-	//ratio->Draw("PE,same");
+	ratio->Draw("PE,same");
 	TString saveName = "plots/unfolded";
 	if(unfoldType==TUNFOLD) saveName += "TUnfold";
 	else if(unfoldType==INVERSION) saveName += "Inversion";
 	if(closure) saveName += "ClosureTest";
 	saveName += "_NoRegularization_Mean";
-	//saveName += (int)mean;
+	saveName += (int)mean;
 	saveName += "_RecoBins";
-	//saveName += (int)nBinsReco;
+	saveName += (int)nBinsReco;
 	saveName += ".png";
 	canvas1->SaveAs(saveName);
 	delete canvas1;
 }//end plotUnfolded
 
-double Unfold::GetConditionNumber(TH2D*hResponse)
+double Unfold::GetConditionNumber(TH2F*hResponse)
 {
 	TString histName = hResponse->GetName();
 	int nBinsX = hResponse->GetNbinsX();
@@ -298,10 +223,10 @@ double Unfold::GetConditionNumber(TH2D*hResponse)
 	return condition;
 }//end GetConditionNumber
 
-TH2D*Unfold::makeResponseMatrix(TH2D*hist)
+TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 {
-	TH2D*hResponse = (TH2D*)hist->Clone("hResponse");
-	hResponse->RebinY(2);
+	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
+	//hResponse->RebinY(2);
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
 	for(int i=1;i<=nBinsX;i++){
@@ -319,7 +244,7 @@ TH2D*Unfold::makeResponseMatrix(TH2D*hist)
 	return hResponse;
 }//end makeResponseMatrix
 
-TMatrixD Unfold::makeMatrixFromHist(TH2D*hist)
+TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 {
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
@@ -332,7 +257,7 @@ TMatrixD Unfold::makeMatrixFromHist(TH2D*hist)
 	return matrix;
 }//end makeMatrixFromHist
 
-TVectorD Unfold::makeVectorFromHist(TH1D*hist)
+TVectorD Unfold::makeVectorFromHist(TH1F*hist)
 {
 	int nBins = hist->GetNbinsX();
 	TVectorD vec(nBins);
@@ -342,7 +267,7 @@ TVectorD Unfold::makeVectorFromHist(TH1D*hist)
 	return vec;
 }//end makeVectorFromHist
 
-TH1F*Unfold::makeHistFromVector(TVectorD vec,TH1D*hist)
+TH1F*Unfold::makeHistFromVector(TVectorD vec,TH1F*hist)
 {
 	TH1F*hReturn = (TH1F*)hist->Clone("hUnfolded");
 	int nBins = vec.GetNrows();
@@ -352,7 +277,7 @@ TH1F*Unfold::makeHistFromVector(TVectorD vec,TH1D*hist)
 	return hReturn;
 }//end makeHistFromVector
 
-TH1F*Unfold::unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse)
+TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 {
 	std::cout << endl;
 	std::cout << "**************************************************" << endl;
@@ -361,19 +286,20 @@ TH1F*Unfold::unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse)
 	std::cout << endl;
 
 	TString unfoldType = "Inversion";
+	TH2F*hResponse = makeResponseMatrix(hMatrix);
 
 	//Make response matrix histogram from input histogram matrix
 	//Meaning we normalize each column (true bins) 
 	//Here I am assuming the reco has twice as many bins as tru
 	//This is because this is what I'm using for this specific task
 	//This would have to be treated differently if this wasn't the case
-	TH1D*hRecoRebin = (TH1D*)hReco->Clone("hRecoRebin");
-	hRecoRebin->Rebin(2);//need to update this to use custom rebin function
+	//TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
+	//hRecoRebin->Rebin(2);//need to update this to use custom rebin function
 
 	//Turn histograms into matrices and vectors
 	TMatrixD responseM = makeMatrixFromHist(hResponse);
 	TVectorD trueV = makeVectorFromHist(hTrue);
-	TVectorD recoV = makeVectorFromHist(hRecoRebin);
+	TVectorD recoV = makeVectorFromHist(hReco);
 
 	//Invert
 	TMatrixD invertedM = responseM.Invert();
@@ -384,7 +310,7 @@ TH1F*Unfold::unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse)
 	TMatrixD Vx = invertedM*invertedMT;
 
 	TH1F*hUnfolded = makeHistFromVector(unfoldedV,hTrue);
-	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("unfolded with errors");
+	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversionE");
 	std::cout << "Number of bins = " << nBinsTrue << endl;
 
 	//Get error bars from diagonal of covariance matrix for unfolded histogram
@@ -394,7 +320,7 @@ TH1F*Unfold::unfoldInversion(TH1D*hReco,TH1D*hTrue,TH2D*hResponse)
 	return hUnfoldedE;
 }//end unfoldInversion
 
-void Unfold::plotMatrix(TH2D*hMatrix,TString saveName,bool printCondition)
+void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 {
 	gStyle->SetPalette(1);
 	double xPosition,yPosition;
@@ -419,7 +345,7 @@ void Unfold::plotMatrix(TH2D*hMatrix,TString saveName,bool printCondition)
 	delete canvas;
 }
 
-TH2*Unfold::RebinTH2(TH2*hist,TString histName,TH2*hBinning)
+TH2F*Unfold::RebinTH2(TH2F*hist,TString histName,TH2F*hBinning)
 {
 	int nBinsHist = hist->GetNbinsY();
 	int nBinsReco = hBinning->GetNbinsY();
@@ -435,7 +361,7 @@ TH2*Unfold::RebinTH2(TH2*hist,TString histName,TH2*hBinning)
 		if(i==0) newbinning[i] = hBinningProjection->GetBinLowEdge(i+1);
 		else newbinning[i] = newbinning[i-1]+hBinningProjection->GetBinWidth(i);
 	}
-	TH2D*hRebin = new TH2D(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
+	TH2F*hRebin = new TH2F(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
 
 	double y,x;
 	for(int i=1;i<=nBinsTrue;i++){
@@ -451,7 +377,7 @@ TH2*Unfold::RebinTH2(TH2*hist,TString histName,TH2*hBinning)
 	return hRebin;
 }
 
-TH2*Unfold::RebinTH2(TH2*hist,TString histName,std::vector<double> binning)
+TH2F*Unfold::RebinTH2(TH2F*hist,TString histName,std::vector<double> binning)
 {
  int nBinsHist = hist->GetNbinsY();
  int nBinsReco = binning.size()-1;
@@ -464,7 +390,7 @@ TH2*Unfold::RebinTH2(TH2*hist,TString histName,std::vector<double> binning)
  for(int i=0;i<=nBinsReco;i++){
   newbinning[i] = binning.at(i);
  }
- TH2D*hRebin = new TH2D(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
+ TH2F*hRebin = new TH2F(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
 
  double y,x;
  for(int i=1;i<=nBinsTrue;i++){
@@ -480,7 +406,7 @@ TH2*Unfold::RebinTH2(TH2*hist,TString histName,std::vector<double> binning)
  return hRebin;
 }
 
-TH1*Unfold::RebinTH1(TH1*hist,TString histName,std::vector<double> binning)
+TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,std::vector<double> binning)
 {
  int nBinsHist = hist->GetNbinsX();
  int nBinsReco = binning.size()-1;
@@ -488,7 +414,7 @@ TH1*Unfold::RebinTH1(TH1*hist,TString histName,std::vector<double> binning)
  for(int i=0;i<=nBinsReco;i++){
   newbinning[i] = binning.at(i);
  }
- TH1D*hRebin = new TH1D(histName,"",nBinsReco,newbinning);
+ TH1F*hRebin = new TH1F(histName,"",nBinsReco,newbinning);
 
  int bin;
  double y,x;
@@ -502,7 +428,7 @@ TH1*Unfold::RebinTH1(TH1*hist,TString histName,std::vector<double> binning)
  return hRebin;
 }
 
-TH1*Unfold::RebinTH1(TH1*hist,TString histName,TH1*hBinning)
+TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
 {
  //This function takes a histogram,hist, and defines its binning according to a given 
  //histogram, hBinning
@@ -514,7 +440,7 @@ TH1*Unfold::RebinTH1(TH1*hist,TString histName,TH1*hBinning)
   if(i==0) newbinning[i] = hBinning->GetBinLowEdge(i+1);
   else newbinning[i] = newbinning[i-1]+hBinning->GetBinWidth(i);
  }
- TH1D*hRebin = new TH1D(histName,"",nBinsNew,newbinning);
+ TH1F*hRebin = new TH1F(histName,"",nBinsNew,newbinning);
  
  double y,x;
  double nEntries;

@@ -6,10 +6,10 @@ void unfoldToyModels()
 	TFile*file = new TFile(fileLocation);
 
 	TH1D*hReco =     (TH1D*)file->Get("hReco");
-	TH1D*hClosure =  (TH1D*)file->Get("hClosure");
+	TH1D*hClosure =  (TH1D*)file->Get("hReco");
 	TH1D*hTrue =     (TH1D*)file->Get("hTrue");
 	TH2D*hMatrix =   (TH2D*)file->Get("hMatrix");
-	TH2D*hResponse = (TH2D*)file->Get("hResponse");
+	TH2D*hResponse = (TH2D*)file->Get("hMatrix");
 
 	Unfold*toyUnfold = new Unfold();
 	Unfold::RegType regType = toyUnfold->NO_REG;
