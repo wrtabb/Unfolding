@@ -3,7 +3,6 @@
 ToyModel::ToyModel(double distNorm,double expDecay,double peakNormRel,double distMean,
 		   double distSigma,double resSigma,double xmin,double xmax,int nBins)
 {
-	
 	SetModelParameters(distNorm,expDecay,peakNormRel,distMean,distSigma,resSigma,xmin,xmax,
 			   nBins);
 
@@ -56,6 +55,7 @@ TH1F*ToyModel::GetTrueHist()
 		binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		content = func->Integral(binMin,binMax);
 		hist->SetBinContent(i,content);
+		hist->SetBinError(i,TMath::Sqrt(content));
 	}
 
 	return hist;
@@ -85,6 +85,7 @@ TH1F*ToyModel::GetRecoHist(bool useTUnfold)
 		binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		content = func->Integral(binMin,binMax);
 		hist->SetBinContent(i,content);
+		hist->SetBinError(i,TMath::Sqrt(content));
 	}
 	return hist;
 }
@@ -123,6 +124,7 @@ TH2F*ToyModel::GetMigrationMatrix(bool useTUnfold)
 
                         double content = integrand2DFunc->Integral(xlow, xhi, ylow, yhi);
                         migrationHist->SetBinContent(iBin,jBin,content);
+			migrationHist->SetBinError(iBin,jBin,TMath::Sqrt(content));
                 }//end loop over rows
         }//end loop over columns
 	return migrationHist;
