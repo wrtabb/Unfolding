@@ -19,6 +19,8 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 
 	if(nBinsReco==nBinsTrue){
 		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
+		cout << "Input bins: " << nBinsReco << endl;
+		cout << "Output bins: " << nBinsTrue << endl;
 		cout << "Closing unfolding script" << endl;
 		return hBlank;
 	}
@@ -105,7 +107,7 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2*histEmatTotal=unfold.GetEmatrixTotal("unfolding total error matrix");
 
 	//Create unfolding histogram with errors
-	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("Unfolded with errors");
+	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedTUnfold");
 
 	//loop over unfolded histogram bins and assign errors to each one
 	for(int i=0;i<=nBinsTrue;i++){
@@ -226,7 +228,6 @@ double Unfold::GetConditionNumber(TH2F*hResponse)
 TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 {
 	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
-	//hResponse->RebinY(2);
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
 	for(int i=1;i<=nBinsX;i++){
@@ -287,14 +288,12 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 
 	TString unfoldType = "Inversion";
 	TH2F*hResponse = makeResponseMatrix(hMatrix);
-
-	//Make response matrix histogram from input histogram matrix
-	//Meaning we normalize each column (true bins) 
-	//Here I am assuming the reco has twice as many bins as tru
-	//This is because this is what I'm using for this specific task
-	//This would have to be treated differently if this wasn't the case
-	//TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
-	//hRecoRebin->Rebin(2);//need to update this to use custom rebin function
+	int nBinsTrue = hTrue->GetNbinsX();
+	int nBinsReco = hReco->GetNbinsX();
+	double conditionNumber = GetConditionNumber(hResponse);
+	cout << "Condition number: " << conditionNumber << endl;
+	cout << "Number of output bins: " << nBinsTrue << endl;
+	cout << "Number of input bins: " << nBinsReco << endl;
 
 	//Turn histograms into matrices and vectors
 	TMatrixD responseM = makeMatrixFromHist(hResponse);
@@ -305,13 +304,11 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TMatrixD invertedM = responseM.Invert();
 	TVectorD unfoldedV = invertedM*recoV;
 
-	//Get covariance (assuming Vy = identity)
 	TMatrixD invertedMT = invertedM.T();
 	TMatrixD Vx = invertedM*invertedMT;
 
 	TH1F*hUnfolded = makeHistFromVector(unfoldedV,hTrue);
-	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversionE");
-	std::cout << "Number of bins = " << nBinsTrue << endl;
+	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversion");
 
 	//Get error bars from diagonal of covariance matrix for unfolded histogram
 	for(int i=0;i<nBinsTrue;i++){

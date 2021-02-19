@@ -5,7 +5,9 @@ void makeToyModels()
 {
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	int nBins = 100;
+	
+	//number of true bins
+	int nBins = 50;
 
 	double norm = 100;
 	double expDecay = 20;
@@ -21,11 +23,14 @@ void makeToyModels()
 	TH1F*hTrue = model->GetTrueHist();
 	TH1F*hRecoInversion = model->GetRecoHist(false);
 	TH1F*hRecoTUnfold   = model->GetRecoHist(true);
-	TH2F*hMatrix = model->GetMigrationMatrix(false);
+	TH2F*hMatrixInversion = model->GetMigrationMatrix(false);
+	TH2F*hMatrixTUnfold = model->GetMigrationMatrix(true);
 
 	TFile*saveFile = new TFile(saveName,"recreate");
 	hTrue->Write();
 	hRecoInversion->Write();
 	hRecoTUnfold->Write();
-	hMatrix->Write();
+	hMatrixInversion->Write();
+	hMatrixTUnfold->Write();
+	saveFile->Close();
 }

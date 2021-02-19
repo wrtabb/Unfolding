@@ -3,6 +3,7 @@
 ToyModel::ToyModel(double distNorm,double expDecay,double peakNormRel,double distMean,
 		   double distSigma,double resSigma,double xmin,double xmax,int nBins)
 {
+	
 	SetModelParameters(distNorm,expDecay,peakNormRel,distMean,distSigma,resSigma,xmin,xmax,
 			   nBins);
 
@@ -55,7 +56,6 @@ TH1F*ToyModel::GetTrueHist()
 		binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		content = func->Integral(binMin,binMax);
 		hist->SetBinContent(i,content);
-		hist->SetBinError(i,1/sqrt(content));
 	}
 
 	return hist;
@@ -65,11 +65,14 @@ TH1F*ToyModel::GetTrueHist()
 TH1F*ToyModel::GetRecoHist(bool useTUnfold)
 {
 	int nBins;
-	if(useTUnfold) nBins = _nBins*2; //TUnfold requires more reco bins than true
-	else nBins = _nBins;
+	if(!useTUnfold) nBins = _nBins; 
+	else nBins = 2*_nBins;//TUnfold requires more reco bins than true
 	TF1*func = new TF1("func",recoDistribution,_xmin,_xmax,6);
 	func->SetParameters(_distNorm,_expDecay,_peakNormRel,_distMean,_distSigma,_resSigma);	
-	TH1F*hist = new TH1F("hReco","",_nBins,_xmin,_xmax);
+	TString histName;
+	if(useTUnfold) histName = "hRecoTUnfold";
+	else histName = "hRecoInversion";
+	TH1F*hist = new TH1F(histName,"",nBins,_xmin,_xmax);
 	hist->SetLineColor(kBlack);
 	hist->SetMarkerStyle(20);
 	hist->SetMarkerColor(kBlack);
@@ -77,12 +80,11 @@ TH1F*ToyModel::GetRecoHist(bool useTUnfold)
 	double content;
 	double binMin;
 	double binMax;
-	for(int i=1;i<=_nBins;i++){
+	for(int i=1;i<=nBins;i++){
 		binMin = hist->GetXaxis()->GetBinLowEdge(i);
 		binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		content = func->Integral(binMin,binMax);
 		hist->SetBinContent(i,content);
-		hist->SetBinError(i,1/sqrt(content));
 	}
 	return hist;
 }
@@ -91,15 +93,18 @@ TH2F*ToyModel::GetMigrationMatrix(bool useTUnfold)
 {
 	int nBinsTrue = _nBins;
 	int nBinsReco;
-	double xMin = _xmin-7*_resSigma;
-	double xMax = _xmax+7*_resSigma;
 	if(useTUnfold) nBinsReco = 2*nBinsTrue;
 	else nBinsReco = nBinsTrue;
+	double xMin = _xmin-7*_resSigma;
+	double xMax = _xmax+7*_resSigma;
 	TF2*integrand2DFunc = new TF2("integrand2DFunc",integrand2D,xMin,xMax,xMin,xMax,6);
 	integrand2DFunc->SetParameters(_distNorm,_expDecay,_peakNormRel,_distMean,_distSigma,
 				       _resSigma);
 
-	TH2F*migrationHist = new TH2F("migrationHist", "migrationHist",nBinsReco,_xmin,_xmax,
+	TString histName;
+	if(useTUnfold) histName = "hMatrixTUnfold";
+	else histName = "hMatrixInversion";
+	TH2F*migrationHist = new TH2F(histName, "",nBinsReco,_xmin,_xmax,
 			              nBinsTrue,_xmin,_xmax);
 	double xlow,xhi,ylow,yhi,yield;
         for(int iBin = 0; iBin <= nBinsReco+1; iBin++){//loop over columns
@@ -118,7 +123,6 @@ TH2F*ToyModel::GetMigrationMatrix(bool useTUnfold)
 
                         double content = integrand2DFunc->Integral(xlow, xhi, ylow, yhi);
                         migrationHist->SetBinContent(iBin,jBin,content);
-			if(content!=0) migrationHist->SetBinError(iBin,jBin,1/sqrt(content));
                 }//end loop over rows
         }//end loop over columns
 	return migrationHist;
