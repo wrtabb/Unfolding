@@ -13,15 +13,16 @@
 class ToyModel
 {
 	public:
-		ToyModel(double distNorm,double expDecay,double peakNormRel,
+		ToyModel(double distNorm,double power,double peakNormRel,
 			 double distMean,double distSigma,double resSigma,
 			 double xmin,double xmax,int nBins);
 		TH1F*GetTrueHist();
 		TH1F*GetRecoHist(bool useTUnfold = false);
 		TH2F*GetMigrationMatrix(bool useTUnfold = false);
+		TH2F*GetResponseMatrix(TH2F*hist);
 	private:
 		double _distNorm;
-		double _expDecay;
+		double _power;
 		double _peakNormRel;
 		double _distMean;
 		double _distSigma;
@@ -33,7 +34,7 @@ class ToyModel
 		TF1*_trueFunc;
 		TF1*_recoFunc;
 		TF2*_matrixFunc;
-		void SetModelParameters(double distNorm,double expDecay,double peakNormRel,
+		void SetModelParameters(double distNorm,double power,double peakNormRel,
 					double distMean,double distSigma,double resSigma,
 					double xmin,double xmax,int nBins);
 		void SetModelFunctions(TF1*trueFunc,TF1*recoFunc,TF2*matrixFunc);

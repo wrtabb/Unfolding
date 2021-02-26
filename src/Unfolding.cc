@@ -37,8 +37,8 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	///////////////////////////
 	//  Types of Constraint  //
 	///////////////////////////
-	//TUnfold::EConstraint constraintMode = TUnfold::kEConstraintNone;
-	TUnfold::EConstraint constraintMode = TUnfold::kEConstraintArea;
+	TUnfold::EConstraint constraintMode = TUnfold::kEConstraintNone;
+	//TUnfold::EConstraint constraintMode = TUnfold::kEConstraintArea;
 
 	/////////////////////
 	//  Density Modes  //
@@ -106,6 +106,11 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2*histEmatStat=unfold.GetEmatrixInput("unfolding stat error matrix");
 	TH2*histEmatTotal=unfold.GetEmatrixTotal("unfolding total error matrix");
 
+	TFile*errorFile = new TFile("data/errorMatrixTUnfold.root","recreate");
+	histEmatStat->Write();
+	histEmatTotal->Write();
+	errorFile->Close();
+
 	//Create unfolding histogram with errors
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedTUnfold");
 
@@ -121,12 +126,11 @@ void Unfold::plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfol
 			  bool closure)
 {
 	gStyle->SetOptStat(0);
-	gROOT->SetBatch(true);
 	//if hReco is from TUnfold, it has more bins that hTrue and needs to be 
 	//rebinned for plotting
 	TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
 	//need to update custom rebinning function to calculate error and use it here
-	if(unfoldType==TUNFOLD) hRecoRebin->Rebin(2);; 
+	if(unfoldType==TUNFOLD) hRecoRebin->Rebin(2); 
 
 	hUnfoldedE->SetMarkerStyle(25);
 	hUnfoldedE->SetMarkerColor(kBlue+2);
