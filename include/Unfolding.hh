@@ -45,8 +45,7 @@ class Unfold
 		};
 		//-----Functions-----//
 		Unfold();
-		void plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
-				  bool closure);
+		TCanvas*plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfolded);
 		TH1F*unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
 		TH1F*unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hResponse);
 		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);
@@ -55,9 +54,6 @@ class Unfold
 		TVectorD makeVectorFromHist(TH1F*hist);
 		TH2F*makeResponseMatrix(TH2F*hist);
 		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
-		TH2F*RebinTH2(TH2F*hist,TString histName,std::vector<double> binning);
-		TH2F*RebinTH2(TH2F*hist,TString histName,TH2F*hBinning);
-		TH1F*RebinTH1(TH1F*hist,TString histName,std::vector<double> binning);
 		TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning);
 
 };//end class Unfold

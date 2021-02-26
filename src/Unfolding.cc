@@ -122,64 +122,62 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	return hUnfoldedE;
 }//end unfoldTUnfold
 
-void Unfold::plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfoldType,
-			  bool closure)
+TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfolded)
 {
 	gStyle->SetOptStat(0);
-	//if hReco is from TUnfold, it has more bins that hTrue and needs to be 
-	//rebinned for plotting
-	TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
-	//need to update custom rebinning function to calculate error and use it here
-	if(unfoldType==TUNFOLD) hRecoRebin->Rebin(2); 
+	int nBinsTrue = hTrue->GetNbinsX();
+	int nBinsReco = hReco->GetNbinsX();
+	int binLow = hTrue->GetBinLowEdge(1);
+	int binHigh = hTrue->GetBinLowEdge(nBinsTrue)+hTrue->GetBinWidth(nBinsTrue);
+	float peakMax = 0;	
+	float binContent;
+	for(int i=1;i<=nBinsTrue;i++){
+		binContent = hTrue->GetBinContent(i);
+		if(binContent > peakMax) peakMax = binContent;
+	}
 
-	hUnfoldedE->SetMarkerStyle(25);
-	hUnfoldedE->SetMarkerColor(kBlue+2);
-	hUnfoldedE->SetMarkerSize(1);
-	hUnfoldedE->SetFillColor(kWhite);
-	hRecoRebin->SetMarkerStyle(20);
-	hRecoRebin->SetMarkerColor(kBlack);
-	hRecoRebin->SetLineColor(kBlack);
-	hRecoRebin->SetFillColor(kWhite);
+	TH1F*hRecoRebin2;
+	if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+	else hRecoRebin2 = (TH1F*)hReco->Clone();
+
 	hTrue->SetFillColor(kRed+2);
 	hTrue->SetLineColor(kRed+2);
-	hTrue->SetTitle("");
-	hTrue->SetLabelSize(0);
-	hTrue->SetTitleSize(0);
+	hRecoRebin2->SetMarkerStyle(20);
+	hRecoRebin2->SetMarkerColor(kBlack);
+	hRecoRebin2->SetLineColor(kBlack);
+	hUnfolded->SetMarkerStyle(25);
+	hUnfolded->SetMarkerColor(kBlue+2);
+	hUnfolded->SetLineColor(kBlue+2);
 
-	//Ratio of unfolded histogram over true histogram
-	TH1F*ratio = (TH1F*)hUnfoldedE->Clone("ratio");
+	TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
 	ratio->Divide(hTrue);
 
-	double xChiLabel = 35;
-	double yChiLabel = 5e5;
-	double x[nBinsTrue],res[nBinsTrue];
-	double chi = hUnfoldedE->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
-	TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
+	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
+	legend->SetTextSize(0.02);
+	legend->AddEntry(hTrue,"True Distribution");
+	legend->AddEntry(hReco,"Observed Distribution");
+	legend->AddEntry(hUnfolded,"Unfolded Distribution");
 
+	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	const float padmargins = 0.03;
-	TCanvas*canvas1 = new TCanvas("canvas1","",10,10,1200,1000);
+	const float yAxisMinimum = 0.1;
+	const float yAxisMaximum = peakMax*1.1;
 	TPad*pad1 = new TPad("","",0,0.3,1.0,1.0);
 	pad1->SetBottomMargin(padmargins);
 	pad1->SetGrid();
 	pad1->SetTicks(1,1);
 	pad1->Draw();
 	pad1->cd();
-	double binLow = hUnfoldedE->GetXaxis()->GetBinLowEdge(1);
-	double binHigh = hUnfoldedE->GetXaxis()->GetBinUpEdge(hUnfoldedE->GetNbinsX());
-	TLine*line = new TLine(binLow,1,binHigh,1);
-	line->SetLineColor(kRed);
-	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
-	legend->SetTextSize(0.02);
-	legend->AddEntry(hTrue,"True Distribution");
-	legend->AddEntry(hRecoRebin,"Measured Distribution");
-	legend->AddEntry(hUnfoldedE,"Unfolded Distribution");
+	hTrue->SetLabelSize(0);
+	hTrue->SetTitleSize(0);
+	hTrue->SetMinimum(yAxisMinimum);
+	hTrue->SetMaximum(yAxisMaximum);
 	hTrue->Draw("hist");
-	hRecoRebin->Draw("PE,same");
-	hUnfoldedE->Draw("PE,same");
+	hRecoRebin2->Draw("pe,same");
+	hUnfolded->Draw("pe,same");	
 	legend->Draw("same");
-	chiLabel->Draw("same");
 
-	canvas1->cd();
+	canvas->cd();
 	TPad*pad2 = new TPad("","",0,0.05,1,0.3);
 	pad2->SetTopMargin(padmargins);
 	pad2->SetBottomMargin(0.2);
@@ -195,21 +193,16 @@ void Unfold::plotUnfolded(TH1F*hReco,TH1F*hTrue,TH1F*hUnfoldedE,UnfoldType unfol
 	ratio->GetYaxis()->SetTitle("Unfolded/Truth");
 	ratio->GetXaxis()->SetLabelSize(0.1);
 	ratio->GetXaxis()->SetTitleSize(0.1);
+	ratio->GetXaxis()->SetNoExponent();
+	ratio->GetXaxis()->SetMoreLogLabels();
 	ratio->SetMarkerStyle(20);
 	ratio->SetMarkerColor(kBlack);
-	line->Draw();
-	ratio->Draw("PE,same");
-	TString saveName = "plots/unfolded";
-	if(unfoldType==TUNFOLD) saveName += "TUnfold";
-	else if(unfoldType==INVERSION) saveName += "Inversion";
-	if(closure) saveName += "ClosureTest";
-	saveName += "_NoRegularization_Mean";
-	saveName += (int)mean;
-	saveName += "_RecoBins";
-	saveName += (int)nBinsReco;
-	saveName += ".png";
-	canvas1->SaveAs(saveName);
-	delete canvas1;
+	ratio->SetLineColor(kBlack);
+	ratio->Draw("PE");
+	TLine*line = new TLine(binLow,1,binHigh,1);
+	line->SetLineColor(kRed);
+	line->Draw("same");
+	return canvas;
 }//end plotUnfolded
 
 double Unfold::GetConditionNumber(TH2F*hResponse)
@@ -346,110 +339,51 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	delete canvas;
 }
 
-TH2F*Unfold::RebinTH2(TH2F*hist,TString histName,TH2F*hBinning)
-{
-	int nBinsHist = hist->GetNbinsY();
-	int nBinsReco = hBinning->GetNbinsY();
-	double newbinning[nBinsReco];
-	double binningTrue[nBinsTrue];
-	for(int i=0;i<=nBinsTrue;i++){
-		if(i==nBinsTrue) binningTrue[i] = hist->GetXaxis()->GetBinUpEdge(i);
-		else binningTrue[i] = hist->GetXaxis()->GetBinLowEdge(i+1);
-	}
-
-	TH1D*hBinningProjection = hBinning->ProjectionY();
-	for(int i=0;i<=nBinsReco;i++){
-		if(i==0) newbinning[i] = hBinningProjection->GetBinLowEdge(i+1);
-		else newbinning[i] = newbinning[i-1]+hBinningProjection->GetBinWidth(i);
-	}
-	TH2F*hRebin = new TH2F(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
-
-	double y,x;
-	for(int i=1;i<=nBinsTrue;i++){
-		for(int j=1;j<=nBinsHist;j++){
-			x = hist->GetXaxis()->GetBinCenter(i);
-			y = hist->GetYaxis()->GetBinCenter(j);
-			int nEntries = hist->GetBinContent(i,j);
-			for(int k=0;k<nEntries;k++){
-				hRebin->Fill(x,y);
-			}//end filling hRebin
-		}//end y bin loop
-	} //end x bin loop
-	return hRebin;
-}
-
-TH2F*Unfold::RebinTH2(TH2F*hist,TString histName,std::vector<double> binning)
-{
- int nBinsHist = hist->GetNbinsY();
- int nBinsReco = binning.size()-1;
- double newbinning[nBinsReco];
- double binningTrue[nBinsTrue];
- for(int i=0;i<=nBinsTrue;i++){
-  if(i==nBinsTrue) binningTrue[i] = hist->GetXaxis()->GetBinUpEdge(i);
-  else binningTrue[i] = hist->GetXaxis()->GetBinLowEdge(i+1);
- }
- for(int i=0;i<=nBinsReco;i++){
-  newbinning[i] = binning.at(i);
- }
- TH2F*hRebin = new TH2F(histName,"",nBinsTrue,binningTrue,nBinsReco,newbinning);
-
- double y,x;
- for(int i=1;i<=nBinsTrue;i++){
-  for(int j=1;j<=nBinsHist;j++){
-   x = hist->GetXaxis()->GetBinCenter(i);
-   y = hist->GetYaxis()->GetBinCenter(j);
-   int nEntries = hist->GetBinContent(i,j);
-   for(int k=0;k<nEntries;k++){
-    hRebin->Fill(x,y);
-   }//end filling hRebin
-  }//end y bin loop
- } //end x bin loop
- return hRebin;
-}
-
-TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,std::vector<double> binning)
-{
- int nBinsHist = hist->GetNbinsX();
- int nBinsReco = binning.size()-1;
- double newbinning[nBinsReco];
- for(int i=0;i<=nBinsReco;i++){
-  newbinning[i] = binning.at(i);
- }
- TH1F*hRebin = new TH1F(histName,"",nBinsReco,newbinning);
-
- int bin;
- double y,x;
- for(int j=1;j<=nBinsHist;j++){
-  x = hist->GetXaxis()->GetBinCenter(j);
-  int nEntries = hist->GetBinContent(j);
-  for(int k=0;k<nEntries;k++){
-   hRebin->Fill(x);
-  }//end filling hRebin
- } //end x bin loop
- return hRebin;
-}
 
 TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
 {
- //This function takes a histogram,hist, and defines its binning according to a given 
- //histogram, hBinning
- //Currently, it does not keep the errors, so this still needs to be added.
- int nBinsHist = hist->GetNbinsX();
- int nBinsNew = hBinning->GetNbinsX();
- double newbinning[nBinsNew];
- for(int i=0;i<=nBinsNew;i++){
-  if(i==0) newbinning[i] = hBinning->GetBinLowEdge(i+1);
-  else newbinning[i] = newbinning[i-1]+hBinning->GetBinWidth(i);
- }
- TH1F*hRebin = new TH1F(histName,"",nBinsNew,newbinning);
- 
- double y,x;
- double nEntries;
- for(int j=1;j<=nBinsHist;j++){
-  x = hist->GetXaxis()->GetBinCenter(j);
-  nEntries = hist->GetBinContent(j);
-  hRebin->Fill(x,nEntries);
- } //end x bin loop
- return hRebin;
+	int nBinsOld = hist->GetNbinsX();
+	int nBinsNew = hBinning->GetNbinsX();
+	if(nBinsNew > nBinsOld){
+		cout << "*********************************************************" << endl;
+		cout << "ERROR: new binning must have fewer bins than old binning!" << endl;
+		cout << "*********************************************************" << endl;
+		return hist;
+	}
+	double newbinning[nBinsNew];
+	for(int i=0;i<=nBinsNew;i++){
+		if(i==0) newbinning[i] = hBinning->GetBinLowEdge(i+1);
+		else newbinning[i] = newbinning[i-1]+hBinning->GetBinWidth(i);
+	}
+	TH1F*hRebin = new TH1F(histName,"",nBinsNew,newbinning);
+	double y,x;
+	double nEntries;
+	double histErrors[nBinsOld+2];
+	for(int j=1;j<=nBinsOld;j++){
+		histErrors[j] = hist->GetBinError(j);
+		x = hist->GetXaxis()->GetBinCenter(j);
+		nEntries = hist->GetBinContent(j);
+		hRebin->Fill(x,nEntries);
+		hRebin->GetBin(x);
+	} //end x bin loop
+
+	double histBinWidth;
+	double newBinWidth;
+	double nBinsOldInNew[nBinsNew];
+	double newBinUpperEdge,oldBinUpperEdge;
+	int k = 1;
+	for(int i=1;i<=nBinsNew;i++){
+		newBinUpperEdge = hRebin->GetBinLowEdge(i)+hRebin->GetBinWidth(i);
+		double newError2 = 0;
+		for(int j=k;j<=nBinsOld;j++){
+			oldBinUpperEdge = hist->GetBinLowEdge(j)+hist->GetBinWidth(j);
+			if(oldBinUpperEdge > newBinUpperEdge) continue;
+			k = j;
+			newError2 += hist->GetBinError(j)*hist->GetBinError(j);
+		}
+		hRebin->SetBinError(i,sqrt(newError2));
+	}
+	return hRebin;
+
 }
 

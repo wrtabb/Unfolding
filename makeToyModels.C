@@ -54,8 +54,7 @@ void makeToyModels()
 	hUnfoldedTUnfold->Write();
 	saveFile->Close();
 
-	Unfold::UnfoldType unfoldType = unfold->TUNFOLD;
-	unfold->plotUnfolded(hRecoTUnfold,hTrue,hUnfoldedTUnfold,unfoldType,true);
+	TCanvas*c5 = unfold->plotUnfolded("c5",hRecoTUnfold,hTrue,hUnfoldedTUnfold);
 }
 
 TCanvas*PlotMatrix(TString canvasName,TH2F*hist)
@@ -103,3 +102,4 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	projY->Draw("pe,same");
 	return canvas;
 }
+
