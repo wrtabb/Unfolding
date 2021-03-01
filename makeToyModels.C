@@ -12,8 +12,10 @@ void makeToyModels()
 	gStyle->SetPalette(1);
 	
 	//number of true bins
-	int nBins = 30;
+	//For reco distribution for TUnfold, nBinsReco = 2*nBinsTrue
+	int nBins = 25;
 
+	//Set model parameters
 	double norm = 1000;
 	double power = 1;
 	double peakNormRel = 0.3;
@@ -23,8 +25,12 @@ void makeToyModels()
 	double xmin = 0;
 	double xmax = 180;
 
+	//Create model from parameters above
 	ToyModel*model = new ToyModel(norm,power,peakNormRel,mean,sigma,resSigma,xmin,xmax,
 				      nBins);
+	
+	//Define all needed histogams from model
+	//At minimum, true,reco, and matrix are required for unfolding
 	TH1F*hTrue = model->GetTrueHist();
 	TH1F*hRecoInversion = model->GetRecoHist(false);
 	TH1F*hRecoTUnfold   = model->GetRecoHist(true);
@@ -33,18 +39,26 @@ void makeToyModels()
 	TH2F*hResponseInversion = model->GetResponseMatrix(hMatrixInversion);
 	TH2F*hResponseTUnfold = model->GetResponseMatrix(hMatrixTUnfold);
 
-	TH2F*hMatrixCompare = (TH2F*)hMatrixInversion->Clone();
-	hMatrixCompare->Add(hResponseInversion,-1);
+	//Want to plot matrices as square matrices for asthetic reasons
+	TH2F*hResponseTUnfoldRebin = (TH2F*)hResponseTUnfold->Clone("hResponseTUnfoldRebin");
+	hResponseTUnfoldRebin->RebinX(2);
+	TH2F*hMatrixTUnfoldRebin = (TH2F*)hMatrixTUnfold->Clone("hMatrixTUnfoldRebin");
+	hMatrixTUnfoldRebin->RebinX(2);
 
-	TCanvas*c1 = PlotMatrix("c1",hResponseTUnfold);
-	TCanvas*c2 = PlotMatrix("c2",hMatrixTUnfold);
+	//Plot matrices and migration matrix projections alongside true and reco
+	TCanvas*c1 = PlotMatrix("c1",hResponseTUnfoldRebin);
+	TCanvas*c2 = PlotMatrix("c2",hMatrixTUnfoldRebin);
 	TCanvas*c4 = PlotProjections("c4",hMatrixTUnfold,hTrue,hRecoTUnfold);
 
+	//Create unfolding object
 	Unfold*unfold = new Unfold();
+	//Set regularization type
 	Unfold::RegType regType = unfold->NO_REG;
+	//Carry out unfolding and place in a histogram
 	TH1F*hUnfoldedTUnfold = unfold->unfoldTUnfold(regType,hRecoTUnfold,hTrue,
 						      hMatrixTUnfold);
 
+	//Save the results to a root file
 	TFile*saveFile = new TFile(saveName,"recreate");
 	hTrue->Write();
 	hRecoInversion->Write();
@@ -52,8 +66,11 @@ void makeToyModels()
 	hMatrixInversion->Write();
 	hMatrixTUnfold->Write();
 	hUnfoldedTUnfold->Write();
+	hResponseInversion->Write();
+	hResponseTUnfold->Write();
 	saveFile->Close();
 
+	//plot unfolded results
 	TCanvas*c5 = unfold->plotUnfolded("c5",hRecoTUnfold,hTrue,hUnfoldedTUnfold);
 }
 
@@ -61,6 +78,8 @@ TCanvas*PlotMatrix(TString canvasName,TH2F*hist)
 {
 	TCanvas*c1 = new TCanvas(canvasName,"",0,0,1000,1000);
 	c1->SetGrid();
+	c1->SetRightMargin(0.13);
+	c1->SetLeftMargin(0.13);
 	hist->Draw("colz");	
 	return c1;
 }

@@ -152,7 +152,7 @@ TH2F*ToyModel::GetResponseMatrix(TH2F*hist)
 {
 	int nBinsTrue = hist->GetNbinsY(); //hard coded such tat true is on y-axis
 	int nBinsReco = hist->GetNbinsX(); //and reco is on x-axis	
-	TH2F*hResponse = (TH2F*)hist->Clone();
+	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
 	double sum;
 	double binContent;
 	double newContent;
