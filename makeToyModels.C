@@ -18,6 +18,9 @@ void makeToyModels()
 	//Set model parameters
 	double norm = 1000;
 	double power = 1;
+	//I might want to add a parameter for shifting the asymptote of the power law function
+	//Presently it is hard coded and if you use resSigma > 3 the code breaks because
+	//it cannot integrate across the asymptote
 	double peakNormRel = 0.3;
 	double mean = 91;
 	double sigma = 15;
@@ -114,7 +117,15 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	hTrue->SetFillColor(kWhite);
 	hRecoRebin->SetFillColor(kWhite);
 
-	hTrue->GetYaxis()->SetRangeUser(0,150);
+	float maxY = 0.0;
+	float binContent;
+	for(int i=1;i<=nBinsTrue;i++){
+		binContent = hTrue->GetBinContent(i);
+		if(binContent > maxY) maxY = binContent;
+	}
+	float maxYRange = maxY*1.2;
+	hTrue->GetYaxis()->SetRangeUser(0,maxYRange);
+	hTrue->SetTitle("matrix projections with distributions");
 	hTrue->Draw("hist");
 	hRecoRebin->Draw("hist,same");
 	projX->Draw("pe,same");

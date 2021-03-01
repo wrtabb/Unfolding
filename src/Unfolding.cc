@@ -172,6 +172,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	hTrue->SetTitleSize(0);
 	hTrue->SetMinimum(yAxisMinimum);
 	hTrue->SetMaximum(yAxisMaximum);
+	hTrue->SetTitle("unfolded results");
 	hTrue->Draw("hist");
 	hRecoRebin2->Draw("pe,same");
 	hUnfolded->Draw("pe,same");	
