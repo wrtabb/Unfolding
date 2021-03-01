@@ -17,8 +17,8 @@ class ToyModel
 			 double distMean,double distSigma,double resSigma,
 			 double xmin,double xmax,int nBins);
 		TH1F*GetTrueHist();
-		TH1F*GetRecoHist(bool useTUnfold = false);
-		TH2F*GetMigrationMatrix(bool useTUnfold = false);
+		TH1F*GetRecoHist();
+		TH2F*GetMigrationMatrix();
 		TH2F*GetResponseMatrix(TH2F*hist);
 	private:
 		double _distNorm;

@@ -100,7 +100,7 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	}
 
 	//Create unfolded histogram
-	TH1*hUnfolded = unfold.GetOutput("Unfolded");
+	TH1*hUnfolded = unfold.GetOutput("hUnfolded");
 
 	//Create error matrices
 	TH2*histEmatStat=unfold.GetEmatrixInput("unfolding stat error matrix");
@@ -151,6 +151,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 
 	TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
 	ratio->Divide(hTrue);
+	ratio->SetTitle("");
 
 	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
 	legend->SetTextSize(0.02);
@@ -196,6 +197,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	ratio->GetXaxis()->SetTitleSize(0.1);
 	ratio->GetXaxis()->SetNoExponent();
 	ratio->GetXaxis()->SetMoreLogLabels();
+	ratio->GetXaxis()->SetTitle("mass [GeV]");
 	ratio->SetMarkerStyle(20);
 	ratio->SetMarkerColor(kBlack);
 	ratio->SetLineColor(kBlack);
