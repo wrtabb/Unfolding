@@ -106,10 +106,6 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2*histEmatStat=unfold.GetEmatrixInput("unfolding stat error matrix");
 	TH2*histEmatTotal=unfold.GetEmatrixTotal("unfolding total error matrix");
 
-	TFile*errorFile = new TFile("data/errorMatrixTUnfold.root","recreate");
-	histEmatStat->Write();
-	histEmatTotal->Write();
-	errorFile->Close();
 
 	//Create unfolding histogram with errors
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedTUnfold");
@@ -119,6 +115,13 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 		double binError = TMath::Sqrt(histEmatTotal->GetBinContent(i+1,i+1));
   		hUnfoldedE->SetBinError(i+1,binError);
  	}
+
+	TFile*errorFile = new TFile("data/errorMatrixTUnfold.root","recreate");
+	hUnfoldedE->Write();
+	histEmatStat->Write();
+	histEmatTotal->Write();
+	errorFile->Close();
+
 	return hUnfoldedE;
 }//end unfoldTUnfold
 
@@ -159,6 +162,16 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	legend->AddEntry(hReco,"Observed Distribution");
 	legend->AddEntry(hUnfolded,"Unfolded Distribution");
 
+	float xMax = hTrue->GetXaxis()->GetXmax();
+	float yMax = 1.1*peakMax;
+	double xChiLabel = xMax*0.70;
+	double yChiLabel = yMax*0.75;
+	cout << "y max range " << yMax << endl;
+	double x[nBinsTrue],res[nBinsTrue];
+	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
+	double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
+	TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
+
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	const float padmargins = 0.03;
 	const float yAxisMinimum = 0.1;
@@ -178,6 +191,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	hRecoRebin2->Draw("pe,same");
 	hUnfolded->Draw("pe,same");	
 	legend->Draw("same");
+	chiLabel->Draw("same");
 
 	canvas->cd();
 	TPad*pad2 = new TPad("","",0,0.05,1,0.3);
