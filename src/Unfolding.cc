@@ -128,6 +128,9 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfolded)
 {
 	gStyle->SetOptStat(0);
+	//Get parameters for histograms
+	//These are used to define the canvases and pads
+	//as well as the locations of drawn objects
 	int nBinsTrue = hTrue->GetNbinsX();
 	int nBinsReco = hReco->GetNbinsX();
 	int binLow = hTrue->GetBinLowEdge(1);
@@ -139,10 +142,13 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 		if(binContent > peakMax) peakMax = binContent;
 	}
 
+	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
+	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
 	TH1F*hRecoRebin2;
 	if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
 	else hRecoRebin2 = (TH1F*)hReco->Clone();
 
+	//set histogram drawing options
 	hTrue->SetFillColor(kRed+2);
 	hTrue->SetLineColor(kRed+2);
 	hRecoRebin2->SetMarkerStyle(20);
@@ -152,6 +158,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	hUnfolded->SetMarkerColor(kBlue+2);
 	hUnfolded->SetLineColor(kBlue+2);
 
+	//define the ratio plot to easily see how well the unfolded result matches the true one
 	TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
 	ratio->Divide(hTrue);
 	ratio->SetTitle("");
@@ -162,16 +169,17 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	legend->AddEntry(hReco,"Observed Distribution");
 	legend->AddEntry(hUnfolded,"Unfolded Distribution");
 
+	//Create a label that shows the chi^2 value to print on graph
 	float xMax = hTrue->GetXaxis()->GetXmax();
 	float yMax = 1.1*peakMax;
 	double xChiLabel = xMax*0.70;
 	double yChiLabel = yMax*0.75;
-	cout << "y max range " << yMax << endl;
 	double x[nBinsTrue],res[nBinsTrue];
 	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
 	double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
 	TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
 
+	//Draw canvas and pads to make plot
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	const float padmargins = 0.03;
 	const float yAxisMinimum = 0.1;
@@ -224,6 +232,12 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 
 double Unfold::GetConditionNumber(TH2F*hResponse)
 {
+	//This function obtains the condition number of the response matrix
+	//This is important because it tells us about how diagonal the matrix is
+	//which gives an idea of how well unfolding will work
+	//This helps us figure out if we need to use regularization or not
+	//Small enough condition numbers mean no regularization is needed
+	
 	TString histName = hResponse->GetName();
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
@@ -244,18 +258,26 @@ TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
-	for(int i=1;i<=nBinsX;i++){
-		double nEntriesX = 0;
-		for(int j=1;j<=nBinsY;j++){
-			nEntriesX += hResponse->GetBinContent(i,j);
-		}
-		double sum = 0;
-		for(int j=1;j<=nBinsY;j++){
-			double scaledContent = hResponse->GetBinContent(i,j)/nEntriesX;
+	double nEntriesX;
+	double binContent;
+	double scaledContent;
+	
+	//Loop over all true bins (the y-axis)
+	for(int j=1;j<=nBinsY;j++){
+		nEntriesX = 0.0;
+		//for each true bin, sum up the number of events across all reco bins
+		for(int i=1;i<=nBinsX;i++){
+			binContent = hist->GetBinContent(i,j);
+			nEntriesX += binContent;
+		}//end first loop over reco bins
+		//For each true bin scale the bin content by the number of entries in all
+		//reco bins, then place this content into the new matrix
+		for(int i=1;i<=nBinsX;i++){
+			scaledContent = hist->GetBinContent(i,j)/nEntriesX;
 			hResponse->SetBinContent(i,j,scaledContent);
-			sum += scaledContent;
-		}
-	}
+		}//end second loop over reco bins
+	}//end loop over true bins
+
 	return hResponse;
 }//end makeResponseMatrix
 
@@ -301,9 +323,11 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	std::cout << endl;
 
 	TString unfoldType = "Inversion";
-	TH2F*hResponse = makeResponseMatrix(hMatrix);
+	TH1F*hRecoRebin3 = (TH1F*)hReco->Rebin(2);	
+	TH2F*hMatrixRebinX = (TH2F*)hMatrix->RebinX(2);
+	TH2F*hResponse = makeResponseMatrix(hMatrixRebinX);
 	int nBinsTrue = hTrue->GetNbinsX();
-	int nBinsReco = hReco->GetNbinsX();
+	int nBinsReco = hRecoRebin3->GetNbinsX();
 	double conditionNumber = GetConditionNumber(hResponse);
 	cout << "Condition number: " << conditionNumber << endl;
 	cout << "Number of output bins: " << nBinsTrue << endl;
@@ -312,7 +336,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	//Turn histograms into matrices and vectors
 	TMatrixD responseM = makeMatrixFromHist(hResponse);
 	TVectorD trueV = makeVectorFromHist(hTrue);
-	TVectorD recoV = makeVectorFromHist(hReco);
+	TVectorD recoV = makeVectorFromHist(hRecoRebin3);
 
 	//Invert
 	TMatrixD invertedM = responseM.Invert();
