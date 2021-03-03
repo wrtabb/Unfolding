@@ -63,7 +63,7 @@ TH1F*ToyModel::GetTrueHist()
 		binCenter = (binMax+binMin)/2.0;
 		nEntries = func->Integral(binMin,binMax);
 		hist->SetBinContent(i,nEntries);
-		if(nEntries!=0) hist->SetBinError(i,1/TMath::Sqrt(nEntries));
+		if(nEntries!=0) hist->SetBinError(i,TMath::Sqrt(nEntries));
 	}
 
 	return hist;
@@ -98,7 +98,7 @@ TH1F*ToyModel::GetRecoHist()
 		nEntries = func->Integral(binMin,binMax);
 		binCenter = (binMax+binMin)/2.0;
 		hist->SetBinContent(i,nEntries);
-		if(nEntries!=0) hist->SetBinError(i,1/TMath::Sqrt(nEntries));
+		if(nEntries!=0) hist->SetBinError(i,TMath::Sqrt(nEntries));
 	}
 	return hist;
 }
