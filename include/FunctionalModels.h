@@ -7,7 +7,8 @@
 double trueDistribution(double*var,double*par)
 {
 	double norm = par[0];
-	double power = par[1];
+	double power = 3.0; //set to 3 because of dimensionality of cross section
+	double shift = par[1];
 	double peakNormRel = par[2];
 	double peakMean = par[3];
 	double peakWidth = par[4];
@@ -15,7 +16,7 @@ double trueDistribution(double*var,double*par)
         double x = var[0];
         bool isNormalized = true;
 
-        double value = (norm/TMath::Power((x+45),power))+norm*peakNormRel*
+        double value = (norm/TMath::Power((x+shift),power))+norm*peakNormRel*
 		       ROOT::Math::breitwigner_pdf(x,peakWidth,peakMean); 
 
         return value;

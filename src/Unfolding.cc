@@ -125,7 +125,8 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	return hUnfoldedE;
 }//end unfoldTUnfold
 
-TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfolded)
+TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1F*hTrue,
+			     TH1F*hUnfolded)
 {
 	gStyle->SetOptStat(0);
 	//Get parameters for histograms
@@ -194,7 +195,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TH1F*hReco,TH1F*hTrue,TH1F*hUnfo
 	hTrue->SetTitleSize(0);
 	hTrue->SetMinimum(yAxisMinimum);
 	hTrue->SetMaximum(yAxisMaximum);
-	hTrue->SetTitle("unfolded results");
+	hTrue->SetTitle(titleName);
 	hTrue->Draw("hist");
 	hRecoRebin2->Draw("pe,same");
 	hUnfolded->Draw("pe,same");	
