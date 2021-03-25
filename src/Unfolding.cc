@@ -158,16 +158,18 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	hUnfolded->SetMarkerStyle(25);
 	hUnfolded->SetMarkerColor(kBlue+2);
 	hUnfolded->SetLineColor(kBlue+2);
+	hUnfolded->SetFillColor(kWhite);
 
 	//define the ratio plot to easily see how well the unfolded result matches the true one
 	TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
 	ratio->Divide(hTrue);
 	ratio->SetTitle("");
 
+
 	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
 	legend->SetTextSize(0.02);
 	legend->AddEntry(hTrue,"True Distribution");
-	legend->AddEntry(hReco,"Observed Distribution");
+	legend->AddEntry(hRecoRebin2,"Observed Distribution");
 	legend->AddEntry(hUnfolded,"Unfolded Distribution");
 
 	//Create a label that shows the chi^2 value to print on graph
@@ -228,6 +230,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	TLine*line = new TLine(binLow,1,binHigh,1);
 	line->SetLineColor(kRed);
 	line->Draw("same");
+
 	return canvas;
 }//end plotUnfolded
 
@@ -287,8 +290,8 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
 	TMatrixD matrix(nBinsY,nBinsX);
-	for(int i=1;i<=nBinsX;i++){
-		for(int j=1;j<=nBinsY;j++){
+	for(int i=1;i<nBinsX;i++){
+		for(int j=1;j<nBinsY;j++){
 			matrix(j-1,i-1) = hist->GetBinContent(i,j);
 		}
 	}
@@ -299,7 +302,7 @@ TVectorD Unfold::makeVectorFromHist(TH1F*hist)
 {
 	int nBins = hist->GetNbinsX();
 	TVectorD vec(nBins);
-	for(int i=1;i<=nBins;i++){
+	for(int i=1;i<nBins;i++){
 		vec(i-1) = hist->GetBinContent(i);
 	}
 	return vec;
@@ -327,7 +330,10 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1F*hist2 = (TH1F*)hTrue->Clone();
 	TH2F*hist3 = (TH2F*)hMatrix->Clone();
 
-	TString unfoldType = "Inversion";
+	//reco and the x axis of matrix are made with twice as many bins as true
+	//this is because TUnfold requires more reco bins than true
+	//For inversion method, we need the matrix to be square
+	//So here they are rebinned
 	hist1->Rebin(2);
 	hist3->RebinX(2);
 
@@ -344,8 +350,13 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TVectorD trueV = makeVectorFromHist(hist2);
 	TVectorD recoV = makeVectorFromHist(hist1);
 
-	//Invert
+	//transpose response matrix to mutliply by the reco vector
+	responseM.T();
+
+	//Invert the response matrix
 	TMatrixD invertedM = responseM.Invert();
+
+	//Multiply inverse Matrix to reconstructed vector to get unfolded vector
 	TVectorD unfoldedV = invertedM*recoV;
 
 	TMatrixD invertedMT = invertedM.T();

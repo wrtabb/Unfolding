@@ -5,7 +5,7 @@ const TString saveName = "data/toyModel.root";
 TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
-void makeToyModels()
+void makeToyModels(int nBins,double resSigma)
 {
 	TH1::SetDefaultSumw2();
 	gStyle->SetOptStat(0);
@@ -14,7 +14,6 @@ void makeToyModels()
 	
 	//number of true bins
 	//For reco distribution for TUnfold, nBinsReco = 2*nBinsTrue
-	int nBins = 50;
 	int nBinsReco = 2*nBins;
 
 	//Set model parameters
@@ -22,10 +21,9 @@ void makeToyModels()
 	double peakNormRel = 0.00003;//scaling factor for the peak only
 	double mean = 91;//mean of the peak
 	double sigma = 15;//spread of the peak
-	double resSigma = 1;//resolution of the smearing from true to reco
 	double shift = 6*sigma;//shift of the asymptote of the power function
-	double xmin = 0;//minimum x axis value
-	double xmax = 180;//maximum x axis value
+	double xmin = 15;//minimum x axis value
+	double xmax = 165;//maximum x axis value
 
 	TString saveNameTag = "_nBins_";
 	saveNameTag += nBins;
