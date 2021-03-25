@@ -290,8 +290,8 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
 	TMatrixD matrix(nBinsY,nBinsX);
-	for(int i=1;i<nBinsX;i++){
-		for(int j=1;j<nBinsY;j++){
+	for(int i=1;i<=nBinsX;i++){
+		for(int j=1;j<=nBinsY;j++){
 			matrix(j-1,i-1) = hist->GetBinContent(i,j);
 		}
 	}
@@ -302,7 +302,7 @@ TVectorD Unfold::makeVectorFromHist(TH1F*hist)
 {
 	int nBins = hist->GetNbinsX();
 	TVectorD vec(nBins);
-	for(int i=1;i<nBins;i++){
+	for(int i=1;i<=nBins;i++){
 		vec(i-1) = hist->GetBinContent(i);
 	}
 	return vec;

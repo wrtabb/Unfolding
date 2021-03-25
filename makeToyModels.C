@@ -143,6 +143,11 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	hRecoRebin->Draw("hist,same");
 	projX->Draw("pe,same");
 	projY->Draw("pe,same");
+	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
+	legend->SetTextSize(0.02);
+	legend->AddEntry(projX,"observed");
+	legend->AddEntry(projY,"true");
+	legend->Draw("same");
 	return canvas;
 }
 
