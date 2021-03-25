@@ -322,21 +322,26 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	std::cout << "**************************************************" << endl;
 	std::cout << endl;
 
+	TH1F*hist1 = (TH1F*)hReco->Clone();
+	TH1F*hist2 = (TH1F*)hTrue->Clone();
+	TH2F*hist3 = (TH2F*)hMatrix->Clone();
+
 	TString unfoldType = "Inversion";
-	TH1F*hRecoRebin3 = (TH1F*)hReco->Rebin(2);	
-	TH2F*hMatrixRebinX = (TH2F*)hMatrix->RebinX(2);
-	TH2F*hResponse = makeResponseMatrix(hMatrixRebinX);
-	int nBinsTrue = hTrue->GetNbinsX();
-	int nBinsReco = hRecoRebin3->GetNbinsX();
-	double conditionNumber = GetConditionNumber(hResponse);
+	hist1->Rebin(2);
+	hist3->RebinX(2);
+
+	TH2F*hNorm = makeResponseMatrix(hist3);
+	int nBinsTrue = hist2->GetNbinsX();
+	int nBinsReco = hist1->GetNbinsX();
+	double conditionNumber = GetConditionNumber(hNorm);
 	cout << "Condition number: " << conditionNumber << endl;
 	cout << "Number of output bins: " << nBinsTrue << endl;
 	cout << "Number of input bins: " << nBinsReco << endl;
 
 	//Turn histograms into matrices and vectors
-	TMatrixD responseM = makeMatrixFromHist(hResponse);
-	TVectorD trueV = makeVectorFromHist(hTrue);
-	TVectorD recoV = makeVectorFromHist(hRecoRebin3);
+	TMatrixD responseM = makeMatrixFromHist(hNorm);
+	TVectorD trueV = makeVectorFromHist(hist2);
+	TVectorD recoV = makeVectorFromHist(hist1);
 
 	//Invert
 	TMatrixD invertedM = responseM.Invert();
