@@ -42,18 +42,23 @@ void makeToyModels(int nBins,double resSigma)
 	TH2F*hMatrix = model->GetMigrationMatrix();
 
 	TH2F*hResponse = model->GetResponseMatrix(hMatrix);
+	TH2F*hResponseT = model->GetResponseMatrixT(hMatrix);
 
 	//By default, the reco binning is finer than true binning
 	//This is because TUnfold has this requirement
 	//Here we rebin them for plotting
 	TH2F*hResponseRebin = (TH2F*)hResponse->Clone("hResponseRebin");
 	hResponseRebin->RebinX(2);
+	TH2F*hResponseTRebin = (TH2F*)hResponseT->Clone("hResponseTRebin");
+	hResponseTRebin->RebinX(2);
 	TH2F*hMatrixRebin = (TH2F*)hMatrix->Clone("hMatrixRebin");
 	hMatrixRebin->RebinX(2);
 
 	//Plot matrices and migration matrix projections alongside true and reco
 	TCanvas*c1 = PlotMatrix("c1","response matrix",hResponseRebin);
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
+	TCanvas*c3 = PlotMatrix("c3","response matrix (for reco)",hResponseTRebin);
+	c1->SaveAs("plots/responseMatrixT"+saveNameTag);
 	TCanvas*c2 = PlotMatrix("c2","migration matrix",hMatrixRebin);
 	c2->SaveAs("plots/migrationMatrix"+saveNameTag);
 	TCanvas*c4 = PlotProjections("c4",hMatrix,hTrue,hReco);

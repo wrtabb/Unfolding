@@ -170,3 +170,32 @@ TH2F*ToyModel::GetResponseMatrix(TH2F*hist)
 	}//end j loop
 	return hResponse;
 }//end function
+
+TH2F*ToyModel::GetResponseMatrixT(TH2F*hist)
+{
+	int nBinsTrue = hist->GetNbinsY(); //hard coded such tat true is on y-axis
+	int nBinsReco = hist->GetNbinsX(); //and reco is on x-axis	
+	TH2F*hResponseT = (TH2F*)hist->Clone("hResponseT");
+	double sum;
+	double binContent;
+	double newContent;
+
+	for(int i=1;i<=nBinsReco;i++){
+		sum = 0.0;
+		for(int j=1;j<=nBinsTrue;j++){
+			sum += hist->GetBinContent(i,j);
+		}//end i loop
+		if(sum!=0){
+			for(int j=1;j<=nBinsTrue;j++){
+				binContent = hist->GetBinContent(i,j);
+				newContent = binContent/sum;
+				hResponseT->SetBinContent(i,j,newContent); 
+			}//end i loop
+		}//end if sum!=0
+		else{
+			cout << "Migration matrix not normalizable" << endl;
+			return hist;
+		}
+	}//end j loop
+	return hResponseT;
+}//end function

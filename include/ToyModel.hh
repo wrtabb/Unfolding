@@ -20,6 +20,7 @@ class ToyModel
 		TH1F*GetRecoHist();
 		TH2F*GetMigrationMatrix();
 		TH2F*GetResponseMatrix(TH2F*hist);
+		TH2F*GetResponseMatrixT(TH2F*hist);
 	private:
 		double _distNorm;
 		double _power;

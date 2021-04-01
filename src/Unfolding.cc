@@ -445,3 +445,32 @@ TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
 
 }
 
+TH2F*Unfold::makeResponseMatrixT(TH2F*hist)
+{
+	//Here we normalize for each reco bin instead of each true bin
+	//This is to investigate how events migrate into a given reco bin
+	TH2F*hResponseT = (TH2F*)hist->Clone("hResponseT");
+	int nBinsX = hResponseT->GetNbinsX();
+	int nBinsY = hResponseT->GetNbinsY();
+	double nEntriesY;
+	double binContent;
+	double scaledContent;
+	
+	//Loop over all true bins (the y-axis)
+	for(int i=1;i<=nBinsX;i++){
+		nEntriesY = 0.0;
+		//for each reco bin, sum up the number of events across all reco bins
+		for(int j=1;j<=nBinsY;j++){
+			binContent = hist->GetBinContent(i,j);
+			nEntriesY += binContent;
+		}//end first loop over reco bins
+		//For each true bin scale the bin content by the number of entries in all
+		//reco bins, then place this content into the new matrix
+		for(int j=1;j<=nBinsY;j++){
+			scaledContent = hist->GetBinContent(i,j)/nEntriesY;
+			hResponseT->SetBinContent(i,j,scaledContent);
+		}//end second loop over reco bins
+	}//end loop over true bins
+
+	return hResponseT;
+}//end makeResponseMatrix

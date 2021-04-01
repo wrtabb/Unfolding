@@ -54,6 +54,7 @@ class Unfold
 		TMatrixD makeMatrixFromHist(TH2F*hist);
 		TVectorD makeVectorFromHist(TH1F*hist);
 		TH2F*makeResponseMatrix(TH2F*hist);
+		TH2F*makeResponseMatrixT(TH2F*hist);
 		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
 		TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning);
 
