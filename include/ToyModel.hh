@@ -9,6 +9,7 @@
 #include <TCanvas.h>
 #include <Math/PdfFuncMathCore.h>
 #include "FunctionalModels.h"
+#include "GlobalVariables.h"
 
 class ToyModel
 {

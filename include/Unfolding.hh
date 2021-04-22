@@ -20,6 +20,7 @@
 #include <TDecompSVD.h>
 #include <TString.h>
 #include <TStyle.h>
+#include "GlobalVariables.h"
 
 class Unfold
 {

@@ -103,8 +103,8 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1*hUnfolded = unfold.GetOutput("hUnfolded");
 
 	//Create error matrices
-	TH2*histEmatStat=unfold.GetEmatrixInput("unfolding stat error matrix");
-	TH2*histEmatTotal=unfold.GetEmatrixTotal("unfolding total error matrix");
+	TH2*histEmatStat=unfold.GetEmatrixInput("hEmatrixInput");
+	TH2*histEmatTotal=unfold.GetEmatrixTotal("hEmatrixTotal");
 
 
 	//Create unfolding histogram with errors
@@ -267,16 +267,16 @@ TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 	double scaledContent;
 	
 	//Loop over all true bins (the y-axis)
-	for(int j=1;j<=nBinsY;j++){
+	for(int j=0;j<=nBinsY+1;j++){
 		nEntriesX = 0.0;
 		//for each true bin, sum up the number of events across all reco bins
-		for(int i=1;i<=nBinsX;i++){
+		for(int i=0;i<=nBinsX+1;i++){
 			binContent = hist->GetBinContent(i,j);
 			nEntriesX += binContent;
 		}//end first loop over reco bins
 		//For each true bin scale the bin content by the number of entries in all
 		//reco bins, then place this content into the new matrix
-		for(int i=1;i<=nBinsX;i++){
+		for(int i=0;i<=nBinsX+1;i++){
 			scaledContent = hist->GetBinContent(i,j)/nEntriesX;
 			hResponse->SetBinContent(i,j,scaledContent);
 		}//end second loop over reco bins
@@ -289,10 +289,10 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 {
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
-	TMatrixD matrix(nBinsY,nBinsX);
-	for(int i=1;i<=nBinsX;i++){
-		for(int j=1;j<=nBinsY;j++){
-			matrix(j-1,i-1) = hist->GetBinContent(i,j);
+	TMatrixD matrix(nBinsY+2,nBinsX+2);
+	for(int i=0;i<=nBinsX+1;i++){
+		for(int j=0;j<=nBinsY+1;j++){
+			matrix(j,i) = hist->GetBinContent(i,j);
 		}
 	}
 	return matrix;
@@ -301,9 +301,9 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 TVectorD Unfold::makeVectorFromHist(TH1F*hist)
 {
 	int nBins = hist->GetNbinsX();
-	TVectorD vec(nBins);
-	for(int i=1;i<=nBins;i++){
-		vec(i-1) = hist->GetBinContent(i);
+	TVectorD vec(nBins+2);
+	for(int i=0;i<=nBins+1;i++){
+		vec(i) = hist->GetBinContent(i);
 	}
 	return vec;
 }//end makeVectorFromHist
@@ -312,8 +312,8 @@ TH1F*Unfold::makeHistFromVector(TVectorD vec,TH1F*hist)
 {
 	TH1F*hReturn = (TH1F*)hist->Clone("hUnfolded");
 	int nBins = vec.GetNrows();
-	for(int i=0;i<nBins;i++){
-		hReturn->SetBinContent(i+1,vec(i));
+	for(int i=0;i<nBins+1;i++){
+		hReturn->SetBinContent(i,vec(i));
 	}
 	return hReturn;
 }//end makeHistFromVector
@@ -366,8 +366,12 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversion");
 
 	//Get error bars from diagonal of covariance matrix for unfolded histogram
-	for(int i=0;i<nBinsTrue;i++){
-		hUnfoldedE->SetBinError(i+1,TMath::Sqrt(Vx(i,i)));
+	TFile*loadError = new TFile("data/errorMatrixTUnfold.root");
+	TH2D*hError = (TH2D*)loadError->Get("hEmatrixTotal");
+	double binError;
+	for(int i=1;i<=nBinsTrue;i++){
+		binError = TMath::Sqrt(hError->GetBinContent(i,i));
+		hUnfoldedE->SetBinError(i,binError);
 	}
 	return hUnfoldedE;
 }//end unfoldInversion
@@ -382,6 +386,7 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SetRightMargin(0.15);
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");
+	
 
 	if(printCondition){ condition = GetConditionNumber(hMatrix);
 		xPosition = 15;

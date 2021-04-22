@@ -119,24 +119,24 @@ TH2F*ToyModel::GetMigrationMatrix()
 			              nBinsTrue,_xmin,_xmax);
 	double xlow,xhi,ylow,yhi,yield;
 	double xBinCenter,yBinCenter;
-        for(int iBin = 0; iBin <= nBinsReco+1; iBin++){//loop over columns
-                for(int jBin = 0; jBin <= nBinsTrue+1; jBin++){//looop over rows
-                        if(iBin==0) xlow = xMin;
-                        else xlow = migrationHist->GetXaxis()->GetBinLowEdge(iBin);
+        for(int i=0;i<=nBinsReco+1;i++){//loop over columns
+                for(int j=0;j<=nBinsTrue+1;j++){//looop over rows
+                        if(i==0) xlow = xMin;
+                        else xlow = migrationHist->GetXaxis()->GetBinLowEdge(i);
 
-                        if(iBin==nBinsReco+1) xhi = xMax;
-                        else xhi  = migrationHist->GetXaxis()->GetBinUpEdge (iBin);
+                        if(i==nBinsReco+1) xhi = xMax;
+                        else xhi  = migrationHist->GetXaxis()->GetBinUpEdge (i);
 
-                        if(jBin==0) ylow = xMin;
-                        else ylow = migrationHist->GetYaxis()->GetBinLowEdge(jBin);
+                        if(j==0) ylow = xMin;
+                        else ylow = migrationHist->GetYaxis()->GetBinLowEdge(j);
 
-                        if(jBin==nBinsTrue+1) yhi = xMax;
-                        else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge (jBin);
+                        if(j==nBinsTrue+1) yhi = xMax;
+                        else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge (j);
 
 			xBinCenter = (xhi+xlow)/2.0;
 			yBinCenter = (yhi+ylow)/2.0;
                         double nEntries = integrand2DFunc->Integral(xlow,xhi,ylow,yhi);
-			migrationHist->SetBinContent(iBin,jBin,nEntries);
+			migrationHist->SetBinContent(i,j,nEntries);
                 }//end loop over rows
         }//end loop over columns
 	return migrationHist;
@@ -151,13 +151,13 @@ TH2F*ToyModel::GetResponseMatrix(TH2F*hist)
 	double binContent;
 	double newContent;
 
-	for(int j=1;j<=nBinsTrue;j++){
+	for(int j=0;j<=nBinsTrue+1;j++){
 		sum = 0.0;
-		for(int i=1;i<=nBinsReco;i++){
+		for(int i=0;i<=nBinsReco+1;i++){
 			sum += hist->GetBinContent(i,j);
 		}//end i loop
 		if(sum!=0){
-			for(int i=1;i<=nBinsReco;i++){
+			for(int i=0;i<=nBinsReco+1;i++){
 				binContent = hist->GetBinContent(i,j);
 				newContent = binContent/sum;
 				hResponse->SetBinContent(i,j,newContent); 
@@ -180,13 +180,13 @@ TH2F*ToyModel::GetResponseMatrixT(TH2F*hist)
 	double binContent;
 	double newContent;
 
-	for(int i=1;i<=nBinsReco;i++){
+	for(int i=0;i<=nBinsReco+1;i++){
 		sum = 0.0;
-		for(int j=1;j<=nBinsTrue;j++){
+		for(int j=0;j<=nBinsTrue+1;j++){
 			sum += hist->GetBinContent(i,j);
 		}//end i loop
 		if(sum!=0){
-			for(int j=1;j<=nBinsTrue;j++){
+			for(int j=0;j<=nBinsTrue+1;j++){
 				binContent = hist->GetBinContent(i,j);
 				newContent = binContent/sum;
 				hResponseT->SetBinContent(i,j,newContent); 

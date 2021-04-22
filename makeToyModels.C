@@ -14,9 +14,16 @@ void makeToyModels(int nBins,double resSigma)
 	
 	//number of true bins
 	//For reco distribution for TUnfold, nBinsReco = 2*nBinsTrue
-	int nBinsReco = 2*nBins;
+	int nBinsTrue = nBins;
+	int nBinsReco = 2*nBinsTrue;
 
 	//Set model parameters
+	//These parameters have been chosen such that the distribution will be
+	//Analogous to the mass distribution of Drell-Yan around a peak position of
+	//91 GeV corresponding to the z boson mass
+	//The norm and peakNormRel quantities were chosen to get a relative amplitude
+	//Between the decaying background part and the peak that visually looked 
+	//similar to the Drell-Yan process
 	double norm = 10000000;//overall scaling factor
 	double peakNormRel = 0.00003;//scaling factor for the peak only
 	double mean = 91;//mean of the peak
@@ -70,7 +77,7 @@ void makeToyModels(int nBins,double resSigma)
 	Long64_t nEvents = 1e7;
 	double trueContent;
 	double recoContent;
-	TH1F*hTrueRandom = new TH1F("hTrueRandom","",nBins,xmin,xmax);
+	TH1F*hTrueRandom = new TH1F("hTrueRandom","",nBinsTrue,xmin,xmax);
 	TH1F*hRecoRandom = new TH1F("hRecoRandom","",nBinsReco,xmin,xmax);
 	for(Long64_t i=0;i<nEvents;i++){
 		trueContent = hTrue->GetRandom();
@@ -93,6 +100,8 @@ void makeToyModels(int nBins,double resSigma)
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)
 {
 	TCanvas*c1 = new TCanvas(canvasName,"",0,0,1000,1000);
+//	c1->SetLogx();
+//	c1->SetLogy();
 	c1->SetGrid();
 	c1->SetRightMargin(0.13);
 	c1->SetLeftMargin(0.13);
@@ -119,6 +128,8 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	}
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	canvas->SetGrid();
+//	canvas->SetLogx();
+//	canvas->SetLogy();
 	TH1F*projX = (TH1F*)hMatrixRebin->ProjectionX();
 	TH1F*projY = (TH1F*)hMatrixRebin->ProjectionY();
 	projX->Scale(hReco->Integral()/projX->Integral());

@@ -31,6 +31,7 @@ void unfoldToyModels(int nBins,double resSigma)
 	Unfold::RegType regType = unfold->NO_REG;
 	//Carry out unfolding closure test and place in a histogram
 	TH1F*hUnfoldedClosure = unfold->unfoldTUnfold(regType,hReco,hTrue,hMatrix);
+	//Carry out unfolding on randomized sample and place in a histogram
 	TH1F*hUnfolded = unfold->unfoldTUnfold(regType,hRecoRandom,hTrueRandom,hMatrix);
 
 	//plot unfolded results
