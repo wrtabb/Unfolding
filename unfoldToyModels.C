@@ -53,5 +53,11 @@ void unfoldToyModels(int nBins,double resSigma)
 	TCanvas*c8 = unfold->plotUnfolded("c8","Inversion unfolded",hRecoRandom,hTrueRandom,
 					  hUnfoldedInversion);
 	c8->SaveAs("plots/unfoldedInversion"+saveNameTag);
+
+//	cout << "Error comparision:" << endl;
+//	for(int i=1;i<=nBins;i++){
+//	cout << "TUnfold:   " << hUnfolded->GetBinError(i) << endl;
+//	cout << "Inversion: " << hUnfoldedInversion->GetBinError(i) << endl;
+//	}
 }
 
