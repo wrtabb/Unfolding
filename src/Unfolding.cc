@@ -138,6 +138,10 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	int binHigh = hTrue->GetBinLowEdge(nBinsTrue)+hTrue->GetBinWidth(nBinsTrue);
 	float peakMax = 0;	
 	float binContent;
+	for(int i=1;i<=nBinsTrue;i++){
+		binContent = hTrue->GetBinContent(i);
+		if(binContent > peakMax) peakMax = binContent;
+	}
 
 	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
 	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
@@ -173,13 +177,10 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	float yMax = 1.1*peakMax;
 	double xChiLabel = xMax*0.70;
 	double yChiLabel = yMax*0.75;
-	double xpLabel = xMax*0.70;
-	double ypLabel = yMax*0.70;
-	double res[nBinsTrue];
+	double x[nBinsTrue],res[nBinsTrue];
 	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
 	double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
 	TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
-	TLatex*pLabel = new TLatex(xpLabel,ypLabel,Form("p-value = %lg", pValues));
 
 	//Draw canvas and pads to make plot
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
@@ -202,7 +203,6 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	hUnfolded->Draw("pe,same");	
 	legend->Draw("same");
 	chiLabel->Draw("same");
-	//pLabel->Draw("same");
 
 	canvas->cd();
 	TPad*pad2 = new TPad("","",0,0.05,1,0.3);
