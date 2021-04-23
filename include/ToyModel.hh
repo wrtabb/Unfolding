@@ -16,10 +16,10 @@ class ToyModel
 	public:
 		ToyModel(double distNorm,double power,double peakNormRel,
 			 double distMean,double distSigma,double resSigma,
-			 double xmin,double xmax,int nBins);
-		TH1F*GetTrueHist();
-		TH1F*GetRecoHist();
-		TH2F*GetMigrationMatrix();
+			 vector<double>binningTrue,vector<double>binningReco);
+		TH1F*GetTrueHist(TString trueName);
+		TH1F*GetRecoHist(TString recoName);
+		TH2F*GetMigrationMatrix(TString matrixName);
 		TH2F*GetResponseMatrix(TH2F*hist);
 		TH2F*GetResponseMatrixT(TH2F*hist);
 	private:
@@ -31,14 +31,16 @@ class ToyModel
 		double _resSigma;
 		double _xmin;
 		double _xmax;
-		int _nBins;
-		
+		int _nBinsTrue;
+		int _nBinsReco;
+		vector<double>_binningTrue;	
+		vector<double>_binningReco;	
 		TF1*_trueFunc;
 		TF1*_recoFunc;
 		TF2*_matrixFunc;
 		void SetModelParameters(double distNorm,double power,double peakNormRel,
 					double distMean,double distSigma,double resSigma,
-					double xmin,double xmax,int nBins);
+					vector<double>binningTrue,vector<double>binningReco);
 		void SetModelFunctions(TF1*trueFunc,TF1*recoFunc,TF2*matrixFunc);
 		TF1*Get1DIntegrand();
 		TF2*Get2DIntegrand();

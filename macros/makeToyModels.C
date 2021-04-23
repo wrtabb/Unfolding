@@ -1,57 +1,71 @@
 #include "include/ToyModel.hh"
 #include "include/Unfolding.hh"
 
-const TString saveName = "data/tempToyModel.root";
+const TString saveName = "data/toyModel.root";
 TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
-void makeToyModels()
+void makeToyModels(int nBins,double resSigma)
 {
 	TH1::SetDefaultSumw2();
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	//gROOT->SetBatch(true);
+	gROOT->SetBatch(true);
 	
 	//number of true bins
 	//For reco distribution for TUnfold, nBinsReco = 2*nBinsTrue
-	vector<double> binTrue = {0,10,20,30,40,50};
-	double binTrueArray[] = {0,10,20,30,40,50};
-	vector<double> binReco = {0,5,10,15,20,25,30,35,40,45,50};
-	double binRecoArray[] = {0,5,10,15,20,25,30,35,40,45,50};
-	int nBinsTrue = binTrue.size() - 1;;
-	int nBinsReco = binReco.size() - 1;
+	int nBinsTrue = nBins;
+	int nBinsReco = 2*nBinsTrue;
 
+	//Set model parameters
+	//These parameters have been chosen such that the distribution will be
+	//Analogous to the mass distribution of Drell-Yan around a peak position of
+	//91 GeV corresponding to the z boson mass
+	//The norm and peakNormRel quantities were chosen to get a relative amplitude
+	//Between the decaying background part and the peak that visually looked 
+	//similar to the Drell-Yan process
 	double norm = 10000000;//overall scaling factor
 	double peakNormRel = 0.00003;//scaling factor for the peak only
-	double mean = 25;//mean of the peak
-	double sigma = 5;//spread of the peak
-	double shift = 7*sigma;//shift of the asymptote of the power function
-	double resSigma = 1;
+	double mean = 91;//mean of the peak
+	double sigma = 15;//spread of the peak
+	double shift = 6*sigma;//shift of the asymptote of the power function
+	double xmin = 15;//minimum x axis value
+	double xmax = 165;//maximum x axis value
+
+	TString saveNameTag = "_nBins_";
+	saveNameTag += nBins;
+	saveNameTag += "_ResSmear_";
+	saveNameTag += resSigma;
+	saveNameTag += ".png";
 
 	//Create model from parameters above
-	ToyModel*model = new ToyModel(norm,shift,peakNormRel,mean,sigma,resSigma,binTrue,
-				      binReco);
+	ToyModel*model = new ToyModel(norm,shift,peakNormRel,mean,sigma,resSigma,xmin,xmax,
+				      nBins);
 	
 	//Define all needed histogams from model
 	//At minimum, true,reco, and matrix are required for unfolding
-	TH1F*hTrue = model->GetTrueHist("hTrue");
-	TH1F*hReco = model->GetRecoHist("hReco");
-	TH2F*hMatrix = model->GetMigrationMatrix("hMatrix");
+	TH1F*hTrue = model->GetTrueHist();
+	TH1F*hReco = model->GetRecoHist();
+	TH2F*hMatrix = model->GetMigrationMatrix();
 
 	TH2F*hResponse = model->GetResponseMatrix(hMatrix);
+	TH2F*hResponseT = model->GetResponseMatrixT(hMatrix);
 
 	//By default, the reco binning is finer than true binning
 	//This is because TUnfold has this requirement
 	//Here we rebin them for plotting
 	TH2F*hResponseRebin = (TH2F*)hResponse->Clone("hResponseRebin");
 	hResponseRebin->RebinX(2);
+	TH2F*hResponseTRebin = (TH2F*)hResponseT->Clone("hResponseTRebin");
+	hResponseTRebin->RebinX(2);
 	TH2F*hMatrixRebin = (TH2F*)hMatrix->Clone("hMatrixRebin");
 	hMatrixRebin->RebinX(2);
 
-	TString saveNameTag = "testNewBinningModel.png";
 	//Plot matrices and migration matrix projections alongside true and reco
 	TCanvas*c1 = PlotMatrix("c1","response matrix",hResponseRebin);
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
+	TCanvas*c3 = PlotMatrix("c3","response matrix (for reco)",hResponseTRebin);
+	c1->SaveAs("plots/responseMatrixT"+saveNameTag);
 	TCanvas*c2 = PlotMatrix("c2","migration matrix",hMatrixRebin);
 	c2->SaveAs("plots/migrationMatrix"+saveNameTag);
 	TCanvas*c4 = PlotProjections("c4",hMatrix,hTrue,hReco);
@@ -63,8 +77,8 @@ void makeToyModels()
 	Long64_t nEvents = 1e7;
 	double trueContent;
 	double recoContent;
-	TH1F*hTrueRandom = new TH1F("hTrueRandom","",nBinsTrue,binTrueArray);
-	TH1F*hRecoRandom = new TH1F("hRecoRandom","",nBinsReco,binRecoArray);
+	TH1F*hTrueRandom = new TH1F("hTrueRandom","",nBinsTrue,xmin,xmax);
+	TH1F*hRecoRandom = new TH1F("hRecoRandom","",nBinsReco,xmin,xmax);
 	for(Long64_t i=0;i<nEvents;i++){
 		trueContent = hTrue->GetRandom();
 		recoContent = hReco->GetRandom();
@@ -72,6 +86,15 @@ void makeToyModels()
 		hRecoRandom->Fill(recoContent);	
 	}
 	
+	//Save the results to a root file
+	TFile*saveFile = new TFile(saveName,"recreate");
+	hTrue->Write();
+	hReco->Write();
+	hMatrix->Write();
+	hResponse->Write();
+	hTrueRandom->Write();
+	hRecoRandom->Write();
+	saveFile->Close();
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)
