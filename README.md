@@ -1,6 +1,8 @@
 # Creating a toy model
 Toy models are creating using the ToyModel class, defined like this:  
-	`ToyModel*model = new ToyModel(distNorm, power, peakNormRel, distMean, distSigma, resSigma, binningTrue, binningReco)`  
+```
+ToyModel*model = new ToyModel(distNorm, power, peakNormRel, distMean, distSigma, resSigma, binningTrue, binningReco)
+``` 
 
 Variable definitions:  
 distNorm: A normalization factor for the whole distribution  
