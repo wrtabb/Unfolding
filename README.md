@@ -28,4 +28,9 @@ model->GetResponseMatrix(histMatrix);
 The response matrix is not needed for unfolding as it will be calculated automatically by the unfolding functions, but it is useful to have.  
 
 # Unfolding
-This package has two methods of unfolding: TUnfold(https://root.cern.ch/doc/master/classTUnfold.html) and a simple matrix inversion method. 
+This package has two methods of unfolding: TUnfold(https://root.cern.ch/doc/master/classTUnfold.html) and a simple matrix inversion method.  
+First, create an Unfold class object:  
+```
+Unfold*unfold = new Unfold();
+```
+You need to define a regularization type. At the moment, three types are implemented: NO_REG (no regularization), CONST_REG (user defined value of the regularization parameter. this is currently hard-coded because I never use it, but it should be changed), and VAR_REG_LCURVE (used the L-curve scan method to find the best value of the regularization parameter). 
