@@ -1,7 +1,7 @@
 # Creating a toy model
 Toy models are creating using the ToyModel class, defined like this:  
 ```
-ToyModel*model = new ToyModel(distNorm, power, peakNormRel, distMean, distSigma, resSigma, binningTrue, binningReco)
+ToyModel*model = new ToyModel(distNorm, power, peakNormRel, distMean, distSigma, resSigma, binningTrue, binningReco);
 ``` 
 
 ### Variable definitions:  
@@ -22,4 +22,10 @@ TH2F*histMatrix = model->GetMigrationMatrix("matrixName");
 ```  
 
 Then if you want to see the normalized matrix of migrations, the response matrix, use this:  
-	`model->GetResponseMatrix(histMatrix);`  
+```
+model->GetResponseMatrix(histMatrix);
+```
+The response matrix is not needed for unfolding as it will be calculated automatically by the unfolding functions, but it is useful to have.  
+
+# Unfolding
+This package has two methods of unfolding: TUnfold(https://root.cern.ch/doc/master/classTUnfold.html) and a simple matrix inversion method. 
