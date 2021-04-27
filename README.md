@@ -4,7 +4,7 @@ Toy models are creating using the ToyModel class, defined like this:
 ToyModel*model = new ToyModel(distNorm, power, peakNormRel, distMean, distSigma, resSigma, binningTrue, binningReco)
 ``` 
 
-## Variable definitions:  
+### Variable definitions:  
 **distNorm:** A normalization factor for the whole distribution  
 **power:** The power used for the power law  
 **peakNormRel:** A normalization just for the peak. This allows one to define the peak height compared to the power law  
