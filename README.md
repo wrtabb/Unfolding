@@ -33,4 +33,18 @@ First, create an Unfold class object:
 ```
 Unfold*unfold = new Unfold();
 ```
-You need to define a regularization type. At the moment, three types are implemented: NO_REG (no regularization), CONST_REG (user defined value of the regularization parameter. this is currently hard-coded because I never use it, but it should be changed), and VAR_REG_LCURVE (used the L-curve scan method to find the best value of the regularization parameter). 
+You need to define a regularization type. At the moment, three types are implemented: NO_REG (no regularization), CONST_REG (user defined value of the regularization parameter. this is currently hard-coded because I never use it, but it should be changed), and VAR_REG_LCURVE (used the L-curve scan method to find the best value of the regularization parameter).  
+The regularization is defined like this:
+```
+Unfold::RegType regType = unfold->NO_REG;
+``` 
+The `unfold` function returns a `TH1F` histogram. 
+```
+TH1F*histUnfoldedTUnfold   = unfold->unfoldTUnfold(regType,histReco,histTrue,histMatrix);
+TH1F*histUnfoldedInversion = unfold->unfoldInversion(histReco,histTrue,histMatrix);
+```
+The inversion method requires the observed and true histograms to have the same numbers of bins while the TUnfold method requries that the observed distribution has more bins than the true distribution. Keep this in mind, and either create two sets of distributions or create one for TUnfold and then rebin for use in Inversion.  
+To plot the results with the true histogram, observed histogram rebinned to match the true binning, and the unfolded histogram along with a plot of the ratio, unfolded/true:  
+```
+TCanvas*canvas = unfold->plotUnfolded("canvasName","Unfolded title",histReco,histTrue,histUnfolded);
+```
