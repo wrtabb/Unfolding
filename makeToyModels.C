@@ -1,7 +1,7 @@
 #include "include/ToyModel.hh"
 #include "include/Unfolding.hh"
 
-const TString saveName = "data/tempToyModel.root";
+const TString saveName = "data/toyModel.root";
 TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
@@ -12,21 +12,59 @@ void makeToyModels()
 	gStyle->SetPalette(1);
 	//gROOT->SetBatch(true);
 	
-	//number of true bins
-	//For reco distribution for TUnfold, nBinsReco = 2*nBinsTrue
-	vector<double> binTrue = {0,10,20,30,40,50};
-	double binTrueArray[] = {0,10,20,30,40,50};
-	vector<double> binReco = {0,5,10,15,20,25,30,35,40,45,50};
-	double binRecoArray[] = {0,5,10,15,20,25,30,35,40,45,50};
-	int nBinsTrue = binTrue.size() - 1;;
-	int nBinsReco = binReco.size() - 1;
+	vector<double> binTrue;
+	vector<double> binReco;
 
-	double norm = 10000000;//overall scaling factor
+	double trueBinWidth = 5.0;
+	double recoBinWidth = 2.5;
+	double trueBinEdge = 0.0;
+	cout << "*************************" << endl;
+	cout << "* Getting true binning: *" << endl;
+	cout << "*************************" << endl;
+	for(int i=0;i<1000000;i++){
+		if(trueBinEdge > 165) break;
+		cout << trueBinEdge << endl;
+		binTrue.push_back(trueBinEdge);
+		trueBinEdge += trueBinWidth;
+	}
+
+	const int sizeTrue = binTrue.size();
+	cout << "Array size = " << sizeTrue << endl;
+	double binTrueArray[sizeTrue];
+
+	double recoBinEdge = 0.0;
+	cout << endl;
+	cout << "*************************" << endl;
+	cout << "* Getting reco binning: *" << endl;
+	cout << "*************************" << endl;
+	for(int i=0;i<1000000;i++){
+		if(recoBinEdge > 165) break;
+		cout << recoBinEdge << endl;
+		binReco.push_back(recoBinEdge);
+		recoBinEdge += recoBinWidth;
+	}
+	const int sizeReco = binReco.size();
+	cout << "Array size = " << sizeReco << endl;
+	double binRecoArray[sizeReco];
+
+
+	for(int i=0;i<sizeTrue;i++){
+		binTrueArray[i] = binTrue.at(i);
+	}
+
+	for(int i=0;i<sizeReco;i++){
+		binRecoArray[i] = binReco.at(i);
+	}
+
+	int nBinsTrue = sizeTrue - 1;;
+	int nBinsReco = sizeReco - 1;
+
+	double norm = 1000000;//overall scaling factor
 	double peakNormRel = 0.00003;//scaling factor for the peak only
-	double mean = 25;//mean of the peak
-	double sigma = 5;//spread of the peak
-	double shift = 7*sigma;//shift of the asymptote of the power function
-	double resSigma = 1;
+	double mean = 91;//mean of the peak
+	double sigma = 10;//spread of the peak
+	double shift = 6*sigma;//shift of the asymptote of the power function
+	double resSigma = 2.0;
 
 	//Create model from parameters above
 	ToyModel*model = new ToyModel(norm,shift,peakNormRel,mean,sigma,resSigma,binTrue,
@@ -36,6 +74,7 @@ void makeToyModels()
 	//At minimum, true,reco, and matrix are required for unfolding
 	TH1F*hTrue = model->GetTrueHist("hTrue");
 	TH1F*hReco = model->GetRecoHist("hReco");
+	TH1F*hRecoRebin = RebinTH1(hReco,"hRecoRebin",hTrue);
 	TH2F*hMatrix = model->GetMigrationMatrix("hMatrix");
 
 	TH2F*hResponse = model->GetResponseMatrix(hMatrix);
@@ -43,10 +82,8 @@ void makeToyModels()
 	//By default, the reco binning is finer than true binning
 	//This is because TUnfold has this requirement
 	//Here we rebin them for plotting
-	TH2F*hResponseRebin = (TH2F*)hResponse->Clone("hResponseRebin");
-	hResponseRebin->RebinX(2);
-	TH2F*hMatrixRebin = (TH2F*)hMatrix->Clone("hMatrixRebin");
-	hMatrixRebin->RebinX(2);
+	TH2F*hResponseRebin = RebinTH2(hResponse,"hResponseRebin",hTrue);
+	TH2F*hMatrixRebin = RebinTH2(hMatrix,"hMatrixRebin",hTrue);
 
 	TString saveNameTag = "testNewBinningModel.png";
 	//Plot matrices and migration matrix projections alongside true and reco
@@ -64,7 +101,11 @@ void makeToyModels()
 	double trueContent;
 	double recoContent;
 	TH1F*hTrueRandom = new TH1F("hTrueRandom","",nBinsTrue,binTrueArray);
+	hTrueRandom->SetFillColor(kRed+2);
+	hTrueRandom->SetLineColor(kRed+2);
 	TH1F*hRecoRandom = new TH1F("hRecoRandom","",nBinsReco,binRecoArray);
+	hRecoRandom->SetMarkerColor(kBlack);
+	hRecoRandom->SetMarkerStyle(20);
 	for(Long64_t i=0;i<nEvents;i++){
 		trueContent = hTrue->GetRandom();
 		recoContent = hReco->GetRandom();
@@ -72,6 +113,13 @@ void makeToyModels()
 		hRecoRandom->Fill(recoContent);	
 	}
 	
+	TFile*saveFile = new TFile(saveName,"recreate");
+	hTrue->Write();
+	hReco->Write();
+	hTrueRandom->Write();
+	hRecoRandom->Write();
+	hMatrix->Write();
+	saveFile->Close();
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)
@@ -95,14 +143,6 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	int nBinsReco = hReco->GetNbinsX();
 	TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
 	TH2F*hMatrixRebin = (TH2F*)hMatrix->Clone("hMatrixRebin");
-	if(nBinsReco!=nBinsTrue){ 
-		//this loop assumes that nBinsReco = 2*nBinsTrue
-		//This should be made more general with the use of my
-		//custom rebinning function
-		//Need to implement it in this package
-		hRecoRebin->Rebin(2);
-		hMatrixRebin->RebinX(2);
-	}
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	canvas->SetGrid();
 //	canvas->SetLogx();

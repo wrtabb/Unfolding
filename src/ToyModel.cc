@@ -33,7 +33,7 @@ void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRe
 	_distSigma = distSigma;
 	_resSigma = resSigma;
 	_xmin = binningTrue.at(0);
-	_xmax = 50;;
+	_xmax = binningReco.at(nBinsReco);
 	_nBinsTrue = nBinsTrue;
 	_nBinsReco = nBinsReco;
 	_binningTrue = binningTrue;

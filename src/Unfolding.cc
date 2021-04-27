@@ -17,7 +17,7 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	int nBinsReco = hReco->GetNbinsX();
 	int nBinsTrue = hTrue->GetNbinsX();
 
-	if(nBinsReco==nBinsTrue){
+	if(nBinsReco<=nBinsTrue){
 		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
 		cout << "Input bins: " << nBinsReco << endl;
 		cout << "Output bins: " << nBinsTrue << endl;
@@ -145,9 +145,10 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
 	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
-	TH1F*hRecoRebin2;
-	if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
-	else hRecoRebin2 = (TH1F*)hReco->Clone();
+//	TH1F*hRecoRebin2;
+//	if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+//	else hRecoRebin2 = (TH1F*)hReco->Clone();
+	TH1F*hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
 
 	//set histogram drawing options
 	hTrue->SetFillColor(kRed+2);
@@ -326,16 +327,16 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	std::cout << "**************************************************" << endl;
 	std::cout << endl;
 
-	TH1F*hist1 = (TH1F*)hReco->Clone();
+	TH1F*hist1_oldBinning = (TH1F*)hReco->Clone();
 	TH1F*hist2 = (TH1F*)hTrue->Clone();
-	TH2F*hist3 = (TH2F*)hMatrix->Clone();
+	TH2F*hist3_oldBinning = (TH2F*)hMatrix->Clone();
 
 	//reco and the x axis of matrix are made with twice as many bins as true
 	//this is because TUnfold requires more reco bins than true
 	//For inversion method, we need the matrix to be square
 	//So here they are rebinned
-	hist1->Rebin(2);
-	hist3->RebinX(2);
+	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",hTrue);
+	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",hTrue);
 
 	TH2F*hNorm = makeResponseMatrix(hist3);
 	int nBinsTrue = hist2->GetNbinsX();
@@ -400,54 +401,6 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	TString save = saveDirectory+saveName+".png";
 	canvas->SaveAs(save);	
 	delete canvas;
-}
-
-
-TH1F*Unfold::RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
-{
-	int nBinsOld = hist->GetNbinsX();
-	int nBinsNew = hBinning->GetNbinsX();
-	if(nBinsNew > nBinsOld){
-		cout << "*********************************************************" << endl;
-		cout << "ERROR: new binning must have fewer bins than old binning!" << endl;
-		cout << "*********************************************************" << endl;
-		return hist;
-	}
-	double newbinning[nBinsNew];
-	for(int i=0;i<=nBinsNew;i++){
-		if(i==0) newbinning[i] = hBinning->GetBinLowEdge(i+1);
-		else newbinning[i] = newbinning[i-1]+hBinning->GetBinWidth(i);
-	}
-	TH1F*hRebin = new TH1F(histName,"",nBinsNew,newbinning);
-	double y,x;
-	double nEntries;
-	double histErrors[nBinsOld+2];
-	for(int j=1;j<=nBinsOld;j++){
-		histErrors[j] = hist->GetBinError(j);
-		x = hist->GetXaxis()->GetBinCenter(j);
-		nEntries = hist->GetBinContent(j);
-		hRebin->Fill(x,nEntries);
-		hRebin->GetBin(x);
-	} //end x bin loop
-
-	double histBinWidth;
-	double newBinWidth;
-	double nBinsOldInNew[nBinsNew];
-	double newBinUpperEdge,oldBinUpperEdge;
-	int k = 1;
-	for(int i=1;i<=nBinsNew;i++){
-		newBinUpperEdge = hRebin->GetBinLowEdge(i)+hRebin->GetBinWidth(i);
-		double newError2 = 0;
-		for(int j=k;j<=nBinsOld;j++){
-			oldBinUpperEdge = hist->GetBinLowEdge(j)+hist->GetBinWidth(j);
-			if(oldBinUpperEdge > newBinUpperEdge) continue;
-			k = j;
-			newError2 += hist->GetBinError(j)*hist->GetBinError(j);
-		}
-		hRebin->SetBinError(i,sqrt(newError2));
-	}
-	return hRebin;
-
 }
 
 TH2F*Unfold::makeResponseMatrixT(TH2F*hist)

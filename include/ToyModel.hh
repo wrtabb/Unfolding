@@ -1,15 +1,19 @@
 #ifndef ToyModel_HH
 #define ToyModel_HH
+
 #include <TMath.h>
 #include <TF1.h>
 #include <TF2.h>
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TFile.h>
+#include <TString.h>
 #include <TCanvas.h>
 #include <Math/PdfFuncMathCore.h>
+
 #include "FunctionalModels.h"
 #include "GlobalVariables.h"
+#include "Utilities.h"
 
 class ToyModel
 {
