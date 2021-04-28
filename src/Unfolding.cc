@@ -145,10 +145,10 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
 	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
-//	TH1F*hRecoRebin2;
-//	if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
-//	else hRecoRebin2 = (TH1F*)hReco->Clone();
-	TH1F*hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+	TH1F*hRecoRebin2;
+	//if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+	//else hRecoRebin2 = (TH1F*)hReco->Clone();
+	hRecoRebin2 = (TH1F*)hReco->Rebin(2);
 
 	//set histogram drawing options
 	hTrue->SetFillColor(kRed+2);

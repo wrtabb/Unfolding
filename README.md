@@ -51,5 +51,4 @@ TCanvas*canvas = unfold->plotUnfolded("canvasName","Unfolded title",histReco,his
 Note: Everything shown here would produce a closure test where the true and observed distributions are filled exactly the same as the migration matrix. This means that unfolding should return an exact result with a flat ratio plot at 1.  
 To create a more realistic unfolding model, create new histograms for true and reco and randomly fill them from the true and reco distributions here using a random number generator. I do this with 10^7 entries and get pretty good results.   
 # Caveats
-Currently, the underflow and overflow bins are not created exactly right so that there is a discrepancy between the migration matrix and the 1D distributions in these bins. This will be corrected soon.  
-The plotting function does not work as of quite recently due to and issue with a custom rebinning function. This will be corrected soon.  
+The plotting function does not work as of quite recently due to an issue with a custom rebinning function. This will be corrected soon.  
