@@ -7,7 +7,6 @@ ToyModel::ToyModel(double distNorm,double power,double peakNormRel,double distMe
 	TH1::SetDefaultSumw2();
 	SetModelParameters(distNorm,power,peakNormRel,distMean,distSigma,resSigma,binningTrue,
 			   binningReco);
-
 }
 
 void ToyModel::SetModelFunctions(TF1*trueFunc,TF1*recoFunc,TF2*matrixFunc)

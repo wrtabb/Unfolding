@@ -122,7 +122,11 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	histEmatTotal->Write();
 	errorFile->Close();
 
+	//Here, the RebinTH2 function is called and does not throw an error
 	TH2F*hMatrixRebin = RebinTH2(hMatrix,"matrixRebin",hTrue);
+	//But here, the RebinTH1 function is called and it gives the error
+	// /cvmfs/cms.cern.ch/slc7_amd64_gcc820/lcg/root/6.20.06-bcolbf/bin/root.exe: symbol lookup error: /home/hep/wrtabb/Unfolding/src/Unfolding_cc.so: undefined symbol: _ZN6Unfold8RebinTH1EP4TH1F7TStringS1_
+	//If the next line is commented out, there are no errors
 	TH1F*hRecoRebin = RebinTH1(hReco,"recoRebin",hTrue);
 
 	return hUnfoldedE;
