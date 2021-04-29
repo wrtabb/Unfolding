@@ -5,7 +5,7 @@ Unfold::Unfold()
 
 }
 
-TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
+TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 {
 	cout << endl;
 	cout << "*****************************************" << endl;
@@ -16,7 +16,7 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1F*hBlank = new TH1F("hBlank","",1,0,1);
 	int nBinsReco = hReco->GetNbinsX();
 	int nBinsTrue = hTrue->GetNbinsX();
-
+	
 	if(nBinsReco<=nBinsTrue){
 		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
 		cout << "Input bins: " << nBinsReco << endl;
@@ -122,6 +122,9 @@ TH1F* Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	histEmatTotal->Write();
 	errorFile->Close();
 
+	TH2F*hMatrixRebin = RebinTH2(hMatrix,"matrixRebin",hTrue);
+	TH1F*hRecoRebin = RebinTH1(hReco,"recoRebin",hTrue);
+
 	return hUnfoldedE;
 }//end unfoldTUnfold
 
@@ -146,9 +149,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
 	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
 	TH1F*hRecoRebin2;
-	//if(nBinsReco!=nBinsTrue) hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
-	//else hRecoRebin2 = (TH1F*)hReco->Clone();
-	hRecoRebin2 = (TH1F*)hReco->Rebin(2);
+	hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
 
 	//set histogram drawing options
 	hTrue->SetFillColor(kRed+2);
@@ -331,8 +332,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1F*hist2 = (TH1F*)hTrue->Clone();
 	TH2F*hist3_oldBinning = (TH2F*)hMatrix->Clone();
 
-	//reco and the x axis of matrix are made with twice as many bins as true
-	//this is because TUnfold requires more reco bins than true
+
 	//For inversion method, we need the matrix to be square
 	//So here they are rebinned
 	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",hTrue);

@@ -136,7 +136,6 @@ TH2F*ToyModel::GetMigrationMatrix(TString matrixName)
 	TH2F*migrationHist = new TH2F(matrixName, "",nBinsReco,binningReco,nBinsTrue,
 				      binningTrue);
 	double xlow,xhi,ylow,yhi,yield;
-	double xBinCenter,yBinCenter;
         for(int i=0;i<=nBinsReco+1;i++){//loop over columns
                 for(int j=0;j<=nBinsTrue+1;j++){//looop over rows
                         if(i==0) xlow = xMin;
@@ -151,12 +150,11 @@ TH2F*ToyModel::GetMigrationMatrix(TString matrixName)
                         if(j==nBinsTrue+1) yhi = xMax;
                         else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge (j);
 
-			xBinCenter = (xhi+xlow)/2.0;
-			yBinCenter = (yhi+ylow)/2.0;
                         double nEntries = integrand2DFunc->Integral(xlow,xhi,ylow,yhi);
 			migrationHist->SetBinContent(i,j,nEntries);
                 }//end loop over rows
         }//end loop over columns
+	makeResponseMatrix(migrationHist);
 	return migrationHist;
 }
 

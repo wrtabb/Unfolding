@@ -2,6 +2,7 @@
 #include "include/Unfolding.hh"
 
 const TString saveName = "data/toyModel.root";
+
 TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
@@ -77,7 +78,7 @@ void makeToyModels()
 	TH1F*hRecoRebin = RebinTH1(hReco,"hRecoRebin",hTrue);
 	TH2F*hMatrix = model->GetMigrationMatrix("hMatrix");
 
-	TH2F*hResponse = model->GetResponseMatrix(hMatrix);
+	TH2F*hResponse = makeResponseMatrix(hMatrix);
 
 	//By default, the reco binning is finer than true binning
 	//This is because TUnfold has this requirement
@@ -91,7 +92,7 @@ void makeToyModels()
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
 	TCanvas*c2 = PlotMatrix("c2","migration matrix",hMatrixRebin);
 	c2->SaveAs("plots/migrationMatrix"+saveNameTag);
-	TCanvas*c4 = PlotProjections("c4",hMatrix,hTrue,hReco);
+	TCanvas*c4 = PlotProjections("c4",hMatrixRebin,hTrue,hRecoRebin);
 	c4->SaveAs("plots/projectionsVsDistributions"+saveNameTag);
 
 	//Now produce randomly filled distributions from the model
