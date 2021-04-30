@@ -1,53 +1,45 @@
 #include "include/ToyModel.hh"
 #include "include/Unfolding.hh"
 
-const TString saveName = "data/toyModel.root";
 
 TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
-void makeToyModels()
+// for binning types, see include/GlobalVariables.h
+void makeToyModels(int binningType)
 {
 	TH1::SetDefaultSumw2();
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	//gROOT->SetBatch(true);
+	gROOT->SetBatch(true);
+
+	TString saveName = "data/toyModelRecoBin";
+	saveName += binningType;
+	saveName += ".root";
 	
 	vector<double> binTrue;
 	vector<double> binReco;
 
-	double trueBinWidth = 5.0;
-	double recoBinWidth = 2.5;
-	double trueBinEdge = 0.0;
-	cout << "*************************" << endl;
-	cout << "* Getting true binning: *" << endl;
-	cout << "*************************" << endl;
-	for(int i=0;i<1000000;i++){
-		if(trueBinEdge > 165) break;
-		cout << trueBinEdge << endl;
-		binTrue.push_back(trueBinEdge);
-		trueBinEdge += trueBinWidth;
+	binTrue = _massbinningTrue0;
+
+	if(binningType==0) binReco = _massbinningReco0;
+	else if(binningType==1) binReco = _massbinningReco1;
+	else if(binningType==2) binReco = _massbinningReco2;
+	else if(binningType==3) binReco = _massbinningReco3;
+	else if(binningType==4) binReco = _massbinningReco4;
+	else {
+		cout << "binningType = " << binningType << " does not exist" << endl;
+		cout << "Please see include/GlobalVariables.h for a list of binning types" << endl;
+		return;
 	}
 
 	const int sizeTrue = binTrue.size();
-	cout << "Array size = " << sizeTrue << endl;
+	cout << "True size: " << sizeTrue << endl;
 	double binTrueArray[sizeTrue];
 
-	double recoBinEdge = 0.0;
-	cout << endl;
-	cout << "*************************" << endl;
-	cout << "* Getting reco binning: *" << endl;
-	cout << "*************************" << endl;
-	for(int i=0;i<1000000;i++){
-		if(recoBinEdge > 165) break;
-		cout << recoBinEdge << endl;
-		binReco.push_back(recoBinEdge);
-		recoBinEdge += recoBinWidth;
-	}
 	const int sizeReco = binReco.size();
-	cout << "Array size = " << sizeReco << endl;
+	cout << "Reco size = " << sizeReco << endl;
 	double binRecoArray[sizeReco];
-
 
 	for(int i=0;i<sizeTrue;i++){
 		binTrueArray[i] = binTrue.at(i);
@@ -61,13 +53,13 @@ void makeToyModels()
 	int nBinsReco = sizeReco - 1;
 
 	double norm = 1000000;//overall scaling factor
-	double peakNormRel = 0.00003;//scaling factor for the peak only
+	double peakNormRel = 0.00006;//scaling factor for the peak only
 	double mean = 91;//mean of the peak
 	double sigma = 10;//spread of the peak
 	double shift = 6*sigma;//shift of the asymptote of the power function
 	double resSigma = 2.0;
 
-	//Create model from parameters above
+	//Create model using parameters above
 	ToyModel*model = new ToyModel(norm,shift,peakNormRel,mean,sigma,resSigma,binTrue,
 				      binReco);
 	
@@ -86,7 +78,10 @@ void makeToyModels()
 	TH2F*hResponseRebin = RebinTH2(hResponse,"hResponseRebin",hTrue);
 	TH2F*hMatrixRebin = RebinTH2(hMatrix,"hMatrixRebin",hTrue);
 
-	TString saveNameTag = "testNewBinningModel.png";
+	TString saveNameTag = "_binning";
+	saveNameTag += binningType;
+	saveNameTag += ".png";
+
 	//Plot matrices and migration matrix projections alongside true and reco
 	TCanvas*c1 = PlotMatrix("c1","response matrix",hResponseRebin);
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
@@ -121,6 +116,7 @@ void makeToyModels()
 	hRecoRandom->Write();
 	hMatrix->Write();
 	saveFile->Close();
+
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)

@@ -60,7 +60,6 @@ class Unfold
 		TH2F*makeResponseMatrix(TH2F*hist);
 		TH2F*makeResponseMatrixT(TH2F*hist);
 		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
-		TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning);
 
 };//end class Unfold
 
