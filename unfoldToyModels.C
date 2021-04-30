@@ -2,11 +2,13 @@
 #include "include/Unfolding.hh"
 
 
-void unfoldToyModels(int binningType)
+void unfoldToyModels()
 {
+	int binningType = 5;
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	gROOT->SetBatch(true);
+	//gROOT->SetBatch(true);
+	//
 	TString saveFile = "./data/toyModelRecoBin";
 	saveFile += binningType;
 	saveFile += ".root";

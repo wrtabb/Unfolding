@@ -145,8 +145,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
 	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
-	TH1F*hRecoRebin2;
-	hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+	TH1F*hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
 
 	//set histogram drawing options
 	hTrue->SetFillColor(kRed+2);
@@ -174,7 +173,8 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	//Create a label that shows the chi^2 value to print on graph
 	float xMax = hTrue->GetXaxis()->GetXmax();
 	float yMax = 1.1*peakMax;
-	double xChiLabel = xMax*0.70;
+	//double xChiLabel = xMax*0.70;
+	double xChiLabel = xMax*0.33;
 	double yChiLabel = yMax*0.75;
 	double x[nBinsTrue],res[nBinsTrue];
 	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
@@ -184,9 +184,11 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	//Draw canvas and pads to make plot
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	const float padmargins = 0.03;
-	const float yAxisMinimum = 0.1;
-	const float yAxisMaximum = peakMax*1.1;
+	const float yAxisMinimum = 100;
+	const float yAxisMaximum = 1e7;
 	TPad*pad1 = new TPad("","",0,0.3,1.0,1.0);
+	pad1->SetLogx();
+	pad1->SetLogy();
 	pad1->SetBottomMargin(padmargins);
 	pad1->SetGrid();
 	pad1->SetTicks(1,1);
@@ -205,6 +207,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	canvas->cd();
 	TPad*pad2 = new TPad("","",0,0.05,1,0.3);
+	pad2->SetLogx();
 	pad2->SetTopMargin(padmargins);
 	pad2->SetBottomMargin(0.2);
 	pad2->SetGrid();
@@ -381,6 +384,8 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	TLatex*conditionLabel;
 	TCanvas*canvas = new TCanvas("canvas","",0,0,1000,1000);
 	canvas->SetGrid();
+	canvas->SetLogy();
+	canvas->SetLogx();
 	canvas->SetRightMargin(0.15);
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");

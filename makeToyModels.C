@@ -6,12 +6,13 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco);
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist);
 
 // for binning types, see include/GlobalVariables.h
-void makeToyModels(int binningType)
+void makeToyModels()
 {
+	int binningType = 5;
 	TH1::SetDefaultSumw2();
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	gROOT->SetBatch(true);
+	//gROOT->SetBatch(true);
 
 	TString saveName = "data/toyModelRecoBin";
 	saveName += binningType;
@@ -20,13 +21,15 @@ void makeToyModels(int binningType)
 	vector<double> binTrue;
 	vector<double> binReco;
 
-	binTrue = _massbinningTrue0;
+	if(binningType!=5) binTrue = _massbinningTrue0;
+	else binTrue = _massbinningTrue;
 
 	if(binningType==0) binReco = _massbinningReco0;
 	else if(binningType==1) binReco = _massbinningReco1;
 	else if(binningType==2) binReco = _massbinningReco2;
 	else if(binningType==3) binReco = _massbinningReco3;
 	else if(binningType==4) binReco = _massbinningReco4;
+	else if(binningType==5) binReco = _massbinningReco;
 	else {
 		cout << "binningType = " << binningType << " does not exist" << endl;
 		cout << "Please see include/GlobalVariables.h for a list of binning types" << endl;
@@ -49,7 +52,7 @@ void makeToyModels(int binningType)
 		binRecoArray[i] = binReco.at(i);
 	}
 
-	int nBinsTrue = sizeTrue - 1;;
+	int nBinsTrue = sizeTrue - 1;
 	int nBinsReco = sizeReco - 1;
 
 	double norm = 1000000;//overall scaling factor
@@ -116,7 +119,7 @@ void makeToyModels(int binningType)
 	hRecoRandom->Write();
 	hMatrix->Write();
 	saveFile->Close();
-
+/*
 	delete hRecoRebin;
 	delete hMatrixRebin;
 	delete hTrue;
@@ -127,13 +130,14 @@ void makeToyModels(int binningType)
 	delete c1;
 	delete c2;
 	delete c4;
+*/
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)
 {
 	TCanvas*c1 = new TCanvas(canvasName,"",0,0,1000,1000);
-//	c1->SetLogx();
-//	c1->SetLogy();
+	c1->SetLogx();
+	c1->SetLogy();
 	c1->SetGrid();
 	c1->SetRightMargin(0.13);
 	c1->SetLeftMargin(0.13);
@@ -151,7 +155,7 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	canvas->SetGrid();
-//	canvas->SetLogx();
+	canvas->SetLogx();
 //	canvas->SetLogy();
 	TH1F*projX = (TH1F*)hMatrix->ProjectionX();
 	TH1F*projY = (TH1F*)hMatrix->ProjectionY();
