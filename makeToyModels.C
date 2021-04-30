@@ -142,8 +142,8 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 {
 	int nBinsTrue = hTrue->GetNbinsX();
 	int nBinsReco = hReco->GetNbinsX();
-	TH1F*hRecoRebin = (TH1F*)hReco->Clone("hRecoRebin");
-	TH2F*hMatrixRebin = (TH2F*)hMatrix->Clone("hMatrixRebin");
+	TH1F*hRecoRebin = RebinTH1(hReco,"hRecoRebin",hTrue);
+	TH2F*hMatrixRebin = RebinTH2(hMatrix,"hMatrixRebin",hTrue);
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	canvas->SetGrid();
 //	canvas->SetLogx();
