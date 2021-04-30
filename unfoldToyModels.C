@@ -6,6 +6,7 @@ void unfoldToyModels(int binningType)
 {
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
+	gROOT->SetBatch(true);
 	TString saveFile = "./data/toyModelRecoBin";
 	saveFile += binningType;
 	saveFile += ".root";

@@ -87,7 +87,7 @@ void makeToyModels(int binningType)
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
 	TCanvas*c2 = PlotMatrix("c2","migration matrix",hMatrixRebin);
 	c2->SaveAs("plots/migrationMatrix"+saveNameTag);
-	TCanvas*c4 = PlotProjections("c4",hMatrixRebin,hTrue,hRecoRebin);
+	TCanvas*c4 = PlotProjections("c4",hMatrix,hTrue,hReco);
 	c4->SaveAs("plots/projectionsVsDistributions"+saveNameTag);
 
 	//Now produce randomly filled distributions from the model
@@ -117,6 +117,16 @@ void makeToyModels(int binningType)
 	hMatrix->Write();
 	saveFile->Close();
 
+	delete hRecoRebin;
+	delete hMatrixRebin;
+	delete hTrue;
+	delete hReco;
+	delete hMatrix;
+	delete hTrueRandom;
+	delete hRecoRandom;
+	delete c1;
+	delete c2;
+	delete c4;
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist)
@@ -138,14 +148,13 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 {
 	int nBinsTrue = hTrue->GetNbinsX();
 	int nBinsReco = hReco->GetNbinsX();
-	TH1F*hRecoRebin = RebinTH1(hReco,"hRecoRebin",hTrue);
-	TH2F*hMatrixRebin = RebinTH2(hMatrix,"hMatrixRebin",hTrue);
+
 	TCanvas*canvas = new TCanvas(canvasName,"",0,0,1000,1000);
 	canvas->SetGrid();
 //	canvas->SetLogx();
 //	canvas->SetLogy();
-	TH1F*projX = (TH1F*)hMatrixRebin->ProjectionX();
-	TH1F*projY = (TH1F*)hMatrixRebin->ProjectionY();
+	TH1F*projX = (TH1F*)hMatrix->ProjectionX();
+	TH1F*projY = (TH1F*)hMatrix->ProjectionY();
 	projX->Scale(hReco->Integral()/projX->Integral());
 	projX->SetMarkerStyle(20);
 	projY->SetMarkerStyle(20);
@@ -155,9 +164,9 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	projY->SetLineColor(kRed);
 	TH1F*hTrueClone = (TH1F*)hTrue->Clone();
 	hTrueClone->SetLineColor(kRed);
-	hRecoRebin->SetLineColor(kBlue);
+	hReco->SetLineColor(kBlue);
 	hTrueClone->SetFillColor(kWhite);
-	hRecoRebin->SetFillColor(kWhite);
+	hReco->SetFillColor(kWhite);
 
 	float maxY = 0.0;
 	float binContent;
@@ -170,7 +179,7 @@ TCanvas*PlotProjections(TString canvasName,TH2F*hMatrix,TH1F*hTrue,TH1F*hReco)
 	hTrueClone->GetYaxis()->SetRangeUser(0,maxYRange);
 	hTrueClone->SetTitle("matrix projections with distributions");
 	hTrueClone->Draw("hist");
-	hRecoRebin->Draw("hist,same");
+	hReco->Draw("hist,same");
 	projX->Draw("pe,same");
 	projY->Draw("pe,same");
 	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
