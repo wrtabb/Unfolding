@@ -1,4 +1,6 @@
 #include "../include/ToyModel.hh"
+using namespace Utilities;
+using namespace GlobalVariables;
 
 ToyModel::ToyModel(double distNorm,double power,double peakNormRel,double distMean,
 		   double distSigma,double resSigma,vector<double>binningTrue,

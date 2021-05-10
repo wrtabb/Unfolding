@@ -50,7 +50,7 @@ class Unfold
 		//-----Functions-----//
 		Unfold();
 		TCanvas*plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,
-				     TH1F*hTrue,TH1F*hUnfolded);
+				     TH1F*hTrue,TH1F*hUnfolded,bool logPlot);
 		TH1F*unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
 		TH1F*unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hResponse);
 		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);

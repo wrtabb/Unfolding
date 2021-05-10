@@ -1,17 +1,21 @@
 #include "include/ToyModel.hh"
 #include "include/Unfolding.hh"
 
+using namespace GlobalVariables;
 
-void unfoldToyModels()
+void unfoldToyModels(int binningType)
 {
-	int binningType = 5;
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
 	//gROOT->SetBatch(true);
-	//
+	
 	TString saveFile = "./data/toyModelRecoBin";
 	saveFile += binningType;
 	saveFile += ".root";
+
+	cout << "***********************************" << endl;
+	cout << "Opening file: " << saveFile << endl;
+	cout << "***********************************" << endl;
 
 	TFile*file = new TFile(saveFile);
 	TH1F*hTrue = (TH1F*)file->Get("hTrueRandom");
@@ -21,12 +25,24 @@ void unfoldToyModels()
 	Unfold*unfold = new Unfold();
 	Unfold::RegType regType = unfold->NO_REG;
 
-	TH1F*hUnfolded = unfold->unfoldTUnfold(regType,hReco,hTrue,hMatrix);
-	hUnfolded->SetMarkerStyle(25);
-	hUnfolded->SetMarkerColor(kBlue+2);
-	hUnfolded->SetLineColor(kBlue+2);
+	TH1F*hUnfolded;
+	if(binningType!=6){
+		hUnfolded = unfold->unfoldTUnfold(regType,hReco,hTrue,hMatrix);
+		hUnfolded->SetMarkerStyle(25);
+		hUnfolded->SetMarkerColor(kBlue+2);
+		hUnfolded->SetLineColor(kBlue+2);
+	}
+	else {
+		hUnfolded = unfold->unfoldInversion(hReco,hTrue,hMatrix);
+		hUnfolded->SetMarkerStyle(25);
+		hUnfolded->SetMarkerColor(kBlue+2);
+		hUnfolded->SetLineColor(kBlue+2);
+	}
 
-	TCanvas*c3 = unfold->plotUnfolded("c3","Unfolded results",hReco,hTrue,hUnfolded);
+	bool logPlot;
+	if(binningType == 5) logPlot = true;
+	else logPlot = false;
+	TCanvas*c3 = unfold->plotUnfolded("c3","Unfolded results",hReco,hTrue,hUnfolded,logPlot);
 	TString saveName = "plots/unfoldedRecoBin";
 	saveName += binningType;
 	saveName += ".png";

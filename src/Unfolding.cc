@@ -1,4 +1,6 @@
 #include "../include/Unfolding.hh"
+using namespace Utilities;
+using namespace GlobalVariables;
 
 Unfold::Unfold()
 {
@@ -126,7 +128,7 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 }//end unfoldTUnfold
 
 TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1F*hTrue,
-			     TH1F*hUnfolded)
+			     TH1F*hUnfolded,bool logPlot)
 {
 	gStyle->SetOptStat(0);
 	//Get parameters for histograms
@@ -143,8 +145,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 		if(binContent > peakMax) peakMax = binContent;
 	}
 
-	//For TUnfold, nBinsReco = 2*nBinsTrue but we want to plot them all together
-	//So to look nice, we rebin nBinsReco to match the binning of the true distribution
+	//Rebin reco to plot alongside true for easy comparison
 	TH1F*hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
 
 	//set histogram drawing options
@@ -187,8 +188,11 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	const float yAxisMinimum = 100;
 	const float yAxisMaximum = 1e7;
 	TPad*pad1 = new TPad("","",0,0.3,1.0,1.0);
-	pad1->SetLogx();
-	pad1->SetLogy();
+	if(logPlot){
+		pad1->SetLogx();
+		pad1->SetLogy();
+	}
+
 	pad1->SetBottomMargin(padmargins);
 	pad1->SetGrid();
 	pad1->SetTicks(1,1);
@@ -207,7 +211,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	canvas->cd();
 	TPad*pad2 = new TPad("","",0,0.05,1,0.3);
-	pad2->SetLogx();
+	if(logPlot) pad2->SetLogx();
 	pad2->SetTopMargin(padmargins);
 	pad2->SetBottomMargin(0.2);
 	pad2->SetGrid();
