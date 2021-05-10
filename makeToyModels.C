@@ -22,7 +22,7 @@ void makeToyModels(int binningType)
 	vector<double> binTrue;
 	vector<double> binReco;
 
-	if(binningType==5 || binningType==6) binTrue = _massbinningTrue;
+	if(binningType>4) binTrue = _massbinningTrue;
 	else binTrue = _massbinningTrue0;
 
 	if(binningType==0) binReco = _massbinningReco0;
@@ -32,6 +32,9 @@ void makeToyModels(int binningType)
 	else if(binningType==4) binReco = _massbinningReco4;
 	else if(binningType==5) binReco = _massbinningReco;
 	else if(binningType==6) binReco = binTrue;
+	else if(binningType==7) binReco = _massbinningReco5;
+	else if(binningType==8) binReco = _massbinningReco6;
+	else if(binningType==9) binReco = _massbinningReco7;
 	else {
 		cout << "binningType = " << binningType << " does not exist" << endl;
 		cout << "Please see include/GlobalVariables.h for a list of binning types" << endl;
@@ -88,16 +91,13 @@ void makeToyModels(int binningType)
 	saveNameTag += ".png";
 
 	bool logPlot;
-	if(binningType == 5) logPlot = true;	
+	if(binningType>4) logPlot = true;	
 	else logPlot = false;
 	//Plot matrices and migration matrix projections alongside true and reco
 	TCanvas*c1 = PlotMatrix("c1","response matrix",hResponseRebin,logPlot);
 	c1->SaveAs("plots/responseMatrix"+saveNameTag);
 	TCanvas*c2 = PlotMatrix("c2","migration matrix",hMatrixRebin,logPlot);
 	c2->SaveAs("plots/migrationMatrix"+saveNameTag);
-
-//	TCanvas*c4 = PlotProjections("c4",hMatrix,hTrue,hReco,logPlot);
-//	c4->SaveAs("plots/projectionsVsDistributions"+saveNameTag);
 
 	//Now produce randomly filled distributions from the model
 	//To test unfolding on distributions which are not identical
@@ -125,16 +125,6 @@ void makeToyModels(int binningType)
 	hRecoRandom->Write();
 	hMatrix->Write();
 	saveFile->Close();
-	delete hRecoRebin;
-	delete hMatrixRebin;
-	delete hTrue;
-	delete hReco;
-	delete hMatrix;
-	delete hTrueRandom;
-	delete hRecoRandom;
-	delete c1;
-	delete c2;
-//	delete c4;
 }
 
 TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist,bool logPlot)
@@ -143,11 +133,14 @@ TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist,bool logPlot)
 	if(logPlot){
 		c1->SetLogx();
 		c1->SetLogy();
+		hist->GetYaxis()->SetNoExponent();
+		hist->GetXaxis()->SetNoExponent();
+		hist->GetYaxis()->SetMoreLogLabels();
+		hist->GetXaxis()->SetMoreLogLabels();
 	}
 	c1->SetGrid();
 	c1->SetRightMargin(0.13);
 	c1->SetLeftMargin(0.13);
-	hist->SetMinimum(0.001);
 	hist->SetTitle(plotTitle);
 	hist->GetYaxis()->SetTitle("mass^{true} [GeV]");
 	hist->GetXaxis()->SetTitle("mass^{obs} [GeV]");

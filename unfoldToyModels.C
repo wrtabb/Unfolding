@@ -32,7 +32,7 @@ void unfoldToyModels(int binningType)
 		hUnfolded->SetMarkerColor(kBlue+2);
 		hUnfolded->SetLineColor(kBlue+2);
 	}
-	else {
+	else {//binningType=6 is for inversion method only
 		hUnfolded = unfold->unfoldInversion(hReco,hTrue,hMatrix);
 		hUnfolded->SetMarkerStyle(25);
 		hUnfolded->SetMarkerColor(kBlue+2);
@@ -40,7 +40,7 @@ void unfoldToyModels(int binningType)
 	}
 
 	bool logPlot;
-	if(binningType == 5) logPlot = true;
+	if(binningType>4) logPlot = true;
 	else logPlot = false;
 	TCanvas*c3 = unfold->plotUnfolded("c3","Unfolded results",hReco,hTrue,hUnfolded,logPlot);
 	TString saveName = "plots/unfoldedRecoBin";

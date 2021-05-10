@@ -175,8 +175,17 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	float xMax = hTrue->GetXaxis()->GetXmax();
 	float yMax = 1.1*peakMax;
 	//double xChiLabel = xMax*0.70;
-	double xChiLabel = xMax*0.33;
-	double yChiLabel = yMax*0.75;
+	double xChiLabel;
+        double yChiLabel;
+
+	if(logPlot){
+		xChiLabel = xMax*0.2;
+		yChiLabel = yMax*0.15;
+	}
+	else {
+		xChiLabel = xMax*0.66;
+		yChiLabel = yMax*0.7;
+	}
 	double x[nBinsTrue],res[nBinsTrue];
 	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
 	double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
@@ -201,7 +210,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	hTrue->SetLabelSize(0);
 	hTrue->SetTitleSize(0);
 	hTrue->SetMinimum(yAxisMinimum);
-	hTrue->SetMaximum(yAxisMaximum);
+	//hTrue->SetMaximum(yAxisMaximum);
 	hTrue->SetTitle(titleName);
 	hTrue->Draw("hist");
 	hRecoRebin2->Draw("pe,same");
