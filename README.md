@@ -49,6 +49,8 @@ To plot the results with the true histogram, observed histogram rebinned to matc
 TCanvas*canvas = unfold->plotUnfolded("canvasName","Unfolded title",histReco,histTrue,histUnfolded);
 ```
 Note: Everything shown here would produce a closure test where the true and observed distributions are filled exactly the same as the migration matrix. This means that unfolding should return an exact result with a flat ratio plot at 1.  
-To create a more realistic unfolding model, create new histograms for true and reco and randomly fill them from the true and reco distributions here using a random number generator. I do this with 10^7 entries and get pretty good results.   
-# Caveats
-The plotting function does not work as of quite recently due to an issue with a custom rebinning function. This will be corrected soon.  
+To create a more realistic unfolding model, create new histograms for true and reco and randomly fill them from the true and reco functions. You can retrieve the functions like this:
+```
+TF1*functionTrue = model->GetTrueFunction();
+TF1*functionReco = model->GetRecoFunction();
+```
