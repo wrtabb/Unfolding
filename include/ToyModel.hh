@@ -26,6 +26,8 @@ class ToyModel
 		TH2F*GetMigrationMatrix(TString matrixName);
 		TH2F*GetResponseMatrix(TH2F*hist);
 		TH2F*GetResponseMatrixT(TH2F*hist);
+		TF1*GetTrueFunction();
+		TF1*GetRecoFunction();
 	private:
 		double _distNorm;
 		double _power;
@@ -35,6 +37,8 @@ class ToyModel
 		double _resSigma;
 		double _xmin;
 		double _xmax;
+		double _xMin;
+		double _xMax;
 		int _nBinsTrue;
 		int _nBinsReco;
 		vector<double>_binningTrue;	
@@ -45,7 +49,7 @@ class ToyModel
 		void SetModelParameters(double distNorm,double power,double peakNormRel,
 					double distMean,double distSigma,double resSigma,
 					vector<double>binningTrue,vector<double>binningReco);
-		void SetModelFunctions(TF1*trueFunc,TF1*recoFunc,TF2*matrixFunc);
+		void SetModelFunctions();
 		TF1*Get1DIntegrand();
 		TF2*Get2DIntegrand();
 };

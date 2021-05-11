@@ -77,8 +77,10 @@ void makeToyModels(int binningType)
 	TH1F*hReco = model->GetRecoHist("hReco");
 	TH1F*hRecoRebin = RebinTH1(hReco,"hRecoRebin",hTrue);
 	TH2F*hMatrix = model->GetMigrationMatrix("hMatrix");
-
 	TH2F*hResponse = makeResponseMatrix(hMatrix);
+
+	TF1*trueFunction = model->GetTrueFunction();
+	TF1*recoFunction = model->GetRecoFunction();
 
 	//By default, the reco binning is finer than true binning
 	//This is because TUnfold has this requirement
@@ -111,9 +113,10 @@ void makeToyModels(int binningType)
 	TH1F*hRecoRandom = new TH1F("hRecoRandom","",nBinsReco,binRecoArray);
 	hRecoRandom->SetMarkerColor(kBlack);
 	hRecoRandom->SetMarkerStyle(20);
+
 	for(Long64_t i=0;i<nEvents;i++){
-		trueContent = hTrue->GetRandom();
-		recoContent = hReco->GetRandom();
+		trueContent = trueFunction->GetRandom();
+		recoContent = recoFunction->GetRandom();
 		hTrueRandom->Fill(trueContent);
 		hRecoRandom->Fill(recoContent);	
 	}

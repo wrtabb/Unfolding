@@ -345,12 +345,24 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH1F*hist2 = (TH1F*)hTrue->Clone();
 	TH2F*hist3_oldBinning = (TH2F*)hMatrix->Clone();
 
-
 	//For inversion method, we need the matrix to be square
 	//So here they are rebinned
 	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",hTrue);
 	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",hTrue);
+	int nBins = hist1->GetNbinsX();
 
+	//Make Vy, input covariance assuming for now that it is diagonal
+	//This is used to calculate the output covariance later to get errors
+	TMatrixD Vy(nBins,nBins);
+	double entry;
+	for(int i=0;i<nBins;i++){
+		for(int j=0;j<nBins;j++){
+			if(j==i) entry = hist1->GetBinError(i+1);
+			else entry = 0;
+			Vy(i,j) = entry;	
+		}
+	}
+	
 	TH2F*hNorm = makeResponseMatrix(hist3);
 	int nBinsTrue = hist2->GetNbinsX();
 	int nBinsReco = hist1->GetNbinsX();
@@ -374,7 +386,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TVectorD unfoldedV = invertedM*recoV;
 
 	TMatrixD invertedMT = invertedM.T();
-	TMatrixD Vx = invertedM*invertedMT;
+	TMatrixD Vx = invertedM*Vy*invertedMT;
 
 	TH1F*hUnfolded = makeHistFromVector(unfoldedV,hTrue);
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversion");
@@ -384,7 +396,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2D*hError = (TH2D*)loadError->Get("hEmatrixTotal");
 	double binError;
 	for(int i=1;i<=nBinsTrue;i++){
-		binError = TMath::Sqrt(hError->GetBinContent(i,i));
+		binError = TMath::Sqrt(Vx(i,i));
 		hUnfoldedE->SetBinError(i,binError);
 	}
 	return hUnfoldedE;

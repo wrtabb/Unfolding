@@ -9,14 +9,9 @@ ToyModel::ToyModel(double distNorm,double power,double peakNormRel,double distMe
 	TH1::SetDefaultSumw2();
 	SetModelParameters(distNorm,power,peakNormRel,distMean,distSigma,resSigma,binningTrue,
 			   binningReco);
+	SetModelFunctions();
 }
 
-void ToyModel::SetModelFunctions(TF1*trueFunc,TF1*recoFunc,TF2*matrixFunc)
-{
-	_trueFunc = trueFunc;
-	_recoFunc = recoFunc;
-	_matrixFunc = matrixFunc;
-}
 
 void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRel,
 				  double distMean,double distSigma,double resSigma,
@@ -33,21 +28,46 @@ void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRe
 	_distMean = distMean;
 	_distSigma = distSigma;
 	_resSigma = resSigma;
+
 	_xmin = binningTrue.at(0);
 	_xmax = binningReco.at(nBinsReco);
+	_xMin = _xmin-7*_resSigma;
+	_xMax = _xmax+7*_resSigma;
 	_nBinsTrue = nBinsTrue;
 	_nBinsReco = nBinsReco;
 	_binningTrue = binningTrue;
 	_binningReco = binningReco;
 }
 
+void ToyModel::SetModelFunctions()
+{
+	TF1*trueFunc = new TF1("trueFunc",trueDistribution,_xMin,_xMax,5);
+	trueFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma);	
+
+	TF1*recoFunc = new TF1("recFunc",recoDistribution,_xMin,_xMax,6);
+	recoFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,_resSigma);
+
+	TF2*integrand2DFunc = new TF2("integrand2DFunc",integrand2D,_xMin,_xMax,_xMin,_xMax,6);
+	integrand2DFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,
+				       _resSigma);
+
+	_trueFunc = trueFunc;
+	_recoFunc = recoFunc;
+	_matrixFunc = integrand2DFunc;
+}
+
+TF1*ToyModel::GetTrueFunction()
+{
+	return _trueFunc;
+}
+
+TF1*ToyModel::GetRecoFunction()
+{
+	return _recoFunc;
+}
+
 TH1F*ToyModel::GetTrueHist(TString trueName)
 {
-	double xMin = _xmin-7*_resSigma;
-	double xMax = _xmax+7*_resSigma;
-	TF1*func = new TF1("func",trueDistribution,xMin,xMax,5);
-	func->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma);	
-
 	int nBinsTrue = _nBinsTrue;
 	double binning[nBinsTrue+1];
 	for(int i=0;i<=nBinsTrue;i++){
@@ -64,12 +84,12 @@ TH1F*ToyModel::GetTrueHist(TString trueName)
 	double binCenter;
 
 	for(int i=0;i<=nBinsTrue+1;i++){
-		if(i==0) binMin = xMin;
+		if(i==0) binMin = _xMin;
 		else binMin = hist->GetXaxis()->GetBinLowEdge(i);
-		if(i==nBinsTrue+1) binMax = xMax;
+		if(i==nBinsTrue+1) binMax = _xMax;
 		else binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		binCenter = (binMax+binMin)/2.0;
-		nEntries = func->Integral(binMin,binMax);
+		nEntries = _trueFunc->Integral(binMin,binMax);
 		hist->SetBinContent(i,nEntries);
 		hist->SetBinError(i,TMath::Sqrt(nEntries));
 	}
@@ -80,11 +100,6 @@ TH1F*ToyModel::GetTrueHist(TString trueName)
 
 TH1F*ToyModel::GetRecoHist(TString recoName)
 {
-	double xMin = _xmin-7*_resSigma;
-	double xMax = _xmax+7*_resSigma;
-	TF1*func = new TF1("func",recoDistribution,xMin,xMax,6);
-	func->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,_resSigma);
-
 	int nBinsReco = _nBinsReco;
 	double binning[nBinsReco+1];
 	for(int i=0;i<=nBinsReco;i++){
@@ -102,11 +117,11 @@ TH1F*ToyModel::GetRecoHist(TString recoName)
 	double binCenter;
 
 	for(int i=0;i<=nBinsReco+1;i++){
-		if(i==0) binMin = xMin;
+		if(i==0) binMin = _xMin;
 		else binMin = hist->GetXaxis()->GetBinLowEdge(i);
-		if(i==nBinsReco+1) binMax = xMax;
+		if(i==nBinsReco+1) binMax = _xMax;
 		else binMax = hist->GetXaxis()->GetBinUpEdge(i);
-		nEntries = func->Integral(binMin,binMax);
+		nEntries = _recoFunc->Integral(binMin,binMax);
 		binCenter = (binMax+binMin)/2.0;
 		hist->SetBinContent(i,nEntries);
 		hist->SetBinError(i,TMath::Sqrt(nEntries));
@@ -116,11 +131,6 @@ TH1F*ToyModel::GetRecoHist(TString recoName)
 
 TH2F*ToyModel::GetMigrationMatrix(TString matrixName)
 {
-	double xMin = _xmin-7*_resSigma;
-	double xMax = _xmax+7*_resSigma;
-	TF2*integrand2DFunc = new TF2("integrand2DFunc",integrand2D,xMin,xMax,xMin,xMax,6);
-	integrand2DFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,
-				       _resSigma);
 	int nBinsTrue = _nBinsTrue;
 	int nBinsReco = _nBinsReco;
 	double binningTrue[nBinsTrue+1];
@@ -139,19 +149,19 @@ TH2F*ToyModel::GetMigrationMatrix(TString matrixName)
 	double xlow,xhi,ylow,yhi,yield;
         for(int i=0;i<=nBinsReco+1;i++){//loop over columns
                 for(int j=0;j<=nBinsTrue+1;j++){//looop over rows
-                        if(i==0) xlow = xMin;
+                        if(i==0) xlow = _xMin;
                         else xlow = migrationHist->GetXaxis()->GetBinLowEdge(i);
 
-                        if(i==nBinsReco+1) xhi = xMax;
+                        if(i==nBinsReco+1) xhi = _xMax;
                         else xhi  = migrationHist->GetXaxis()->GetBinUpEdge (i);
 
-                        if(j==0) ylow = xMin;
+                        if(j==0) ylow = _xMin;
                         else ylow = migrationHist->GetYaxis()->GetBinLowEdge(j);
 
-                        if(j==nBinsTrue+1) yhi = xMax;
+                        if(j==nBinsTrue+1) yhi = _xMax;
                         else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge (j);
 
-                        double nEntries = integrand2DFunc->Integral(xlow,xhi,ylow,yhi);
+                        double nEntries = _matrixFunc->Integral(xlow,xhi,ylow,yhi);
 			migrationHist->SetBinContent(i,j,nEntries);
                 }//end loop over rows
         }//end loop over columns
