@@ -29,14 +29,14 @@ void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRe
 	_distSigma = distSigma;
 	_resSigma = resSigma;
 
-	_xmin = binningTrue.at(0);
-	_xmax = binningReco.at(nBinsReco);
-	_xMin = _xmin-7*_resSigma;
-	_xMax = _xmax+7*_resSigma;
-	_nBinsTrue = nBinsTrue;
-	_nBinsReco = nBinsReco;
-	_binningTrue = binningTrue;
-	_binningReco = binningReco;
+	_xmin = binningTrue.at(0);//lower bound of first bin
+	_xmax = binningReco.at(nBinsReco);//upper bound of last bin
+	_xMin = _xmin-7*_resSigma;//lower bound for integration (there is an asymptote below)
+	_xMax = _xmax+7*_resSigma;//upper bound for ingetration
+	_nBinsTrue = nBinsTrue;//number of bins in true histogram
+	_nBinsReco = nBinsReco;//number of bins in reco histogram
+	_binningTrue = binningTrue;//vector of bin boundaries for true histogram
+	_binningReco = binningReco;//vector of bin boundaries for reco histogram
 }
 
 void ToyModel::SetModelFunctions()

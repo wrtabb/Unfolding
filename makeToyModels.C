@@ -13,7 +13,7 @@ void makeToyModels(int binningType)
 	TH1::SetDefaultSumw2();
 	gStyle->SetOptStat(0);
 	gStyle->SetPalette(1);
-	//gROOT->SetBatch(true);
+	gROOT->SetBatch(true);
 
 	TString saveName = "data/toyModelRecoBin";
 	saveName += binningType;
