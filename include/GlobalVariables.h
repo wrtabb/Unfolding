@@ -827,5 +827,94 @@ const vector<double> _massbinningReco7 = {//binningType==9
 	1500, 
 	3000
 };
+
+//binning for peakComparisonUnfolding
+const vector<double> _peakMassRecoDY = {
+	60, 
+	62, 
+	64, 
+	66, 
+	68, 
+	70, 
+	72, 
+	74, 
+	76, 
+	78.5, 
+	81, 
+	83.5, 
+	86, 
+	88.5, 
+	91, 
+	93.5, 
+	96, 
+	98.5, 
+	101, 
+	103.5, 
+	106, 
+	108, 
+	110, 
+	112.5, 
+	115, 
+	117.5, 
+	120 
+};
+const vector<double> _peakMassReco = {
+	60, 
+	62.5, 
+	65, 
+	67.5, 
+	70, 
+	72.5, 
+	75, 
+	77.5, 
+	80, 
+	82.5, 
+	85, 
+	87.5, 
+	90, 
+	92.5, 
+	95, 
+	97.5, 
+	100, 
+	102.5, 
+	105, 
+	107.5, 
+	110, 
+	112.5, 
+	115, 
+	117.5, 
+	120 
+};
+const vector<double> _peakMassTrueDY = {
+	60,
+	64,
+	68,
+	72,
+	76,
+	81,
+	86,
+	91,
+	96,
+	101,
+	106,
+	110,
+	115,
+	120
+};
+const vector<double> _peakMassTrue = {
+	60,
+	65,
+	70,
+	75,
+	80,
+	85,
+	90,
+	95,
+	100,
+	105,
+	110,
+	115,
+	120
+};
 }//end namespace 
 #endif

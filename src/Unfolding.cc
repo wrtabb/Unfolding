@@ -173,17 +173,18 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 	//Create a label that shows the chi^2 value to print on graph
 	float xMax = hTrue->GetXaxis()->GetXmax();
+	float xMin = hTrue->GetXaxis()->GetXmin();
+	float xRange = xMax-xMin;
 	float yMax = 1.1*peakMax;
-	//double xChiLabel = xMax*0.70;
 	double xChiLabel;
         double yChiLabel;
 
 	if(logPlot){
-		xChiLabel = xMax*0.2;
+		xChiLabel = xRange*0.2+xMin;
 		yChiLabel = yMax*0.15;
 	}
 	else {
-		xChiLabel = xMax*0.66;
+		xChiLabel = xRange*0.66+xMin;
 		yChiLabel = yMax*0.7;
 	}
 	double x[nBinsTrue],res[nBinsTrue];
@@ -353,11 +354,11 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 
 	//Make Vy, input covariance assuming for now that it is diagonal
 	//This is used to calculate the output covariance later to get errors
-	TMatrixD Vy(nBins,nBins);
+	TMatrixD Vy(nBins+2,nBins+2);
 	double entry;
-	for(int i=0;i<nBins;i++){
-		for(int j=0;j<nBins;j++){
-			if(j==i) entry = hist1->GetBinError(i+1);
+	for(int i=0;i<=nBins;i++){
+		for(int j=0;j<=nBins;j++){
+			if(j==i) entry = hist1->GetBinError(i);
 			else entry = 0;
 			Vy(i,j) = entry;	
 		}
@@ -386,8 +387,13 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TVectorD unfoldedV = invertedM*recoV;
 
 	TMatrixD invertedMT = invertedM.T();
-	TMatrixD Vx = invertedM*Vy*invertedMT;
+	TMatrixD Vx_temp = Vy*invertedMT;
+	TMatrixD Vx = invertedM*Vx_temp;
 
+	TCanvas*c10 = new TCanvas("c10","",0,0,1000,1000);
+	c10->SetGrid();
+	Vx.Draw("colz");
+	c10->SaveAs("plots/inversionCovarianceTest.png");
 	TH1F*hUnfolded = makeHistFromVector(unfoldedV,hTrue);
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversion");
 
@@ -395,9 +401,10 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TFile*loadError = new TFile("data/errorMatrixTUnfold.root");
 	TH2D*hError = (TH2D*)loadError->Get("hEmatrixTotal");
 	double binError;
-	for(int i=1;i<=nBinsTrue;i++){
+	for(int i=0;i<=nBinsTrue;i++){
 		binError = TMath::Sqrt(Vx(i,i));
 		hUnfoldedE->SetBinError(i,binError);
+		cout << "bin: " << i << ", % error: " << 100*binError/hUnfoldedE->GetBinContent(i) << endl;
 	}
 	return hUnfoldedE;
 }//end unfoldInversion
