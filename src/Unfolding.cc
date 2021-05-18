@@ -108,6 +108,10 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2*histEmatStat=unfold.GetEmatrixInput("hEmatrixInput");
 	TH2*histEmatTotal=unfold.GetEmatrixTotal("hEmatrixTotal");
 
+	TCanvas*c18 = new TCanvas("c18","",0,0,1000,1000);
+	c18->SetGrid();
+	histEmatTotal->Draw("colz");
+	c18->SaveAs("plots/tunfoldCovariance.png");
 
 	//Create unfolding histogram with errors
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedTUnfold");
@@ -358,7 +362,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	double entry;
 	for(int i=0;i<=nBins;i++){
 		for(int j=0;j<=nBins;j++){
-			if(j==i) entry = hist1->GetBinError(i);
+			if(j==i) entry = (hist1->GetBinError(i))*(hist1->GetBinError(i));
 			else entry = 0;
 			Vy(i,j) = entry;	
 		}

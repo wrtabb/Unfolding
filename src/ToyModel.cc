@@ -2,18 +2,18 @@
 using namespace Utilities;
 using namespace GlobalVariables;
 
-ToyModel::ToyModel(double distNorm,double power,double peakNormRel,double distMean,
+ToyModel::ToyModel(double distNorm,double shift,double peakNormRel,double distMean,
 		   double distSigma,double resSigma,vector<double>binningTrue,
 		   vector<double>binningReco)
 {
 	TH1::SetDefaultSumw2();
-	SetModelParameters(distNorm,power,peakNormRel,distMean,distSigma,resSigma,binningTrue,
+	SetModelParameters(distNorm,shift,peakNormRel,distMean,distSigma,resSigma,binningTrue,
 			   binningReco);
 	SetModelFunctions();
 }
 
 
-void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRel,
+void ToyModel::SetModelParameters(double distNorm,double shift,double peakNormRel,
 				  double distMean,double distSigma,double resSigma,
 				  vector<double>binningTrue,vector<double>binningReco)
 {
@@ -23,7 +23,7 @@ void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRe
 	int nBinsReco = lastBinReco - 1;
 
 	_distNorm = distNorm;
-	_power = power;
+	_shift = shift;
 	_peakNormRel = peakNormRel;
 	_distMean = distMean;
 	_distSigma = distSigma;
@@ -42,13 +42,13 @@ void ToyModel::SetModelParameters(double distNorm,double power,double peakNormRe
 void ToyModel::SetModelFunctions()
 {
 	TF1*trueFunc = new TF1("trueFunc",trueDistribution,_xMin,_xMax,5);
-	trueFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma);	
+	trueFunc->SetParameters(_distNorm,_shift,_peakNormRel,_distMean,_distSigma);	
 
 	TF1*recoFunc = new TF1("recFunc",recoDistribution,_xMin,_xMax,6);
-	recoFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,_resSigma);
+	recoFunc->SetParameters(_distNorm,_shift,_peakNormRel,_distMean,_distSigma,_resSigma);
 
 	TF2*integrand2DFunc = new TF2("integrand2DFunc",integrand2D,_xMin,_xMax,_xMin,_xMax,6);
-	integrand2DFunc->SetParameters(_distNorm,_power,_peakNormRel,_distMean,_distSigma,
+	integrand2DFunc->SetParameters(_distNorm,_shift,_peakNormRel,_distMean,_distSigma,
 				       _resSigma);
 
 	_trueFunc = trueFunc;

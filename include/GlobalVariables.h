@@ -150,7 +150,7 @@ const vector<double> _massbinningReco = {//binningType = 5
 // 6 - Reco binning the same as true binning (needed for inversion method)
 // 7 - Reco binning with three times as many bins
 // 8 - Reco binning with only the highest bin split
-// 9 - Reco binning with a bin in the peak split
+// 9 - Reco binning with one low bin split
 const vector<double> _massbinningTrue0 = {
 	0,
 	5,
@@ -782,6 +782,7 @@ const vector<double> _massbinningReco6 = {//binningType==8
 };
 const vector<double> _massbinningReco7 = {//binningType==9
 	15, 
+	17.5,
 	20, 
 	25, 
 	30, 
@@ -798,7 +799,6 @@ const vector<double> _massbinningReco7 = {//binningType==9
 	81, 
 	86, 
 	91, 
-	93.5,
 	96, 
 	101, 
 	106, 

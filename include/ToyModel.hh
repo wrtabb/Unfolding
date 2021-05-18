@@ -31,6 +31,7 @@ class ToyModel
 	private:
 		double _distNorm;
 		double _power;
+		double _shift;
 		double _peakNormRel;
 		double _distMean;
 		double _distSigma;
