@@ -2,11 +2,16 @@
 using namespace Utilities;
 using namespace GlobalVariables;
 
+ToyModel::ToyModel()
+{
+	TH1::SetDefaultSumw2();
+	SetModelFunctions();
+};
+
 ToyModel::ToyModel(double distNorm,double shift,double peakNormRel,double distMean,
 		   double distSigma,double resSigma,vector<double>binningTrue,
 		   vector<double>binningReco)
 {
-	TH1::SetDefaultSumw2();
 	SetModelParameters(distNorm,shift,peakNormRel,distMean,distSigma,resSigma,binningTrue,
 			   binningReco);
 	SetModelFunctions();
@@ -21,7 +26,6 @@ void ToyModel::SetModelParameters(double distNorm,double shift,double peakNormRe
 	int lastBinReco = binningReco.size();
 	int nBinsTrue = lastBinTrue - 1;
 	int nBinsReco = lastBinReco - 1;
-
 	_distNorm = distNorm;
 	_shift = shift;
 	_peakNormRel = peakNormRel;
@@ -31,8 +35,10 @@ void ToyModel::SetModelParameters(double distNorm,double shift,double peakNormRe
 
 	_xmin = binningTrue.at(0);//lower bound of first bin
 	_xmax = binningReco.at(nBinsReco);//upper bound of last bin
-	_xMin = _xmin-7*_resSigma;//lower bound for integration (there is an asymptote below)
-	_xMax = _xmax+7*_resSigma;//upper bound for ingetration
+	cout << "Distribution mass range: " << _xmin << " to " << _xmax << " GeV" << endl; 
+	_xMin = _xmin-_nSigma*_resSigma;//lower bound for integration
+	_xMax = _xmax+_nSigma*_resSigma;//upper bound for ingetration
+	cout << "Functions defined on range: " << _xMin << " to " << _xMax << " GeV" << endl;
 	_nBinsTrue = nBinsTrue;//number of bins in true histogram
 	_nBinsReco = nBinsReco;//number of bins in reco histogram
 	_binningTrue = binningTrue;//vector of bin boundaries for true histogram
@@ -66,6 +72,11 @@ TF1*ToyModel::GetRecoFunction()
 	return _recoFunc;
 }
 
+int ToyModel::GetNSigma()
+{
+	return _nSigma;
+}
+
 TH1F*ToyModel::GetTrueHist(TString trueName)
 {
 	int nBinsTrue = _nBinsTrue;
@@ -81,22 +92,41 @@ TH1F*ToyModel::GetTrueHist(TString trueName)
 	double nEntries;
 	double binMin;
 	double binMax;
-	double binCenter;
 
+	cout << "***** Getting true histogram *****" << endl;
 	for(int i=0;i<=nBinsTrue+1;i++){
 		if(i==0) binMin = _xMin;
 		else binMin = hist->GetXaxis()->GetBinLowEdge(i);
 		if(i==nBinsTrue+1) binMax = _xMax;
 		else binMax = hist->GetXaxis()->GetBinUpEdge(i);
-		binCenter = (binMax+binMin)/2.0;
 		nEntries = _trueFunc->Integral(binMin,binMax);
 		hist->SetBinContent(i,nEntries);
 		hist->SetBinError(i,TMath::Sqrt(nEntries));
+		cout << "bin " << i << ": ["<< binMin << ", " << binMax << "]" << endl;
 	}
 
 	return hist;
 }
 
+TH1F*ToyModel::GetTrueHistRandom(TString trueName,Long64_t nEntries)
+{
+	int nBins = _nBinsTrue;
+	double binning[nBins+1];
+	for(int i=0;i<=nBins;i++){
+		binning[i] = _binningTrue.at(i);
+	}
+
+	TH1F*hist = new TH1F(trueName,"",nBins,binning);
+	hist->SetFillColor(kRed+2);
+	hist->SetLineColor(kRed+2);
+
+	double content;
+	for(Long64_t i=0;i<nEntries;i++){
+		content = _trueFunc->GetRandom();
+		hist->Fill(content);
+	}
+	return hist;
+}
 
 TH1F*ToyModel::GetRecoHist(TString recoName)
 {
@@ -114,17 +144,38 @@ TH1F*ToyModel::GetRecoHist(TString recoName)
 	double nEntries;
 	double binMin;
 	double binMax;
-	double binCenter;
 
+	cout << "***** Getting reco histogram *****" << endl;
 	for(int i=0;i<=nBinsReco+1;i++){
 		if(i==0) binMin = _xMin;
 		else binMin = hist->GetXaxis()->GetBinLowEdge(i);
 		if(i==nBinsReco+1) binMax = _xMax;
 		else binMax = hist->GetXaxis()->GetBinUpEdge(i);
 		nEntries = _recoFunc->Integral(binMin,binMax);
-		binCenter = (binMax+binMin)/2.0;
 		hist->SetBinContent(i,nEntries);
 		hist->SetBinError(i,TMath::Sqrt(nEntries));
+		cout << "bin " << i << ": ["<< binMin << ", " << binMax << "]" << endl;
+	}
+	return hist;
+}
+
+TH1F*ToyModel::GetRecoHistRandom(TString recoName,Long64_t nEntries)
+{
+	int nBins = _nBinsReco;
+	double binning[nBins+1];
+	for(int i=0;i<=nBins;i++){
+		binning[i] = _binningReco.at(i);
+	}
+
+	TH1F*hist = new TH1F(recoName,"",nBins,binning);
+	hist->SetLineColor(kBlack);
+	hist->SetMarkerStyle(20);
+	hist->SetMarkerColor(kBlack);
+
+	double content;
+	for(Long64_t i=0;i<nEntries;i++){
+		content = _recoFunc->GetRandom();
+		hist->Fill(content);
 	}
 	return hist;
 }
@@ -147,23 +198,26 @@ TH2F*ToyModel::GetMigrationMatrix(TString matrixName)
 	TH2F*migrationHist = new TH2F(matrixName, "",nBinsReco,binningReco,nBinsTrue,
 				      binningTrue);
 	double xlow,xhi,ylow,yhi,yield;
+	cout << "***** Getting migration histogram *****" << endl;
         for(int i=0;i<=nBinsReco+1;i++){//loop over columns
                 for(int j=0;j<=nBinsTrue+1;j++){//looop over rows
                         if(i==0) xlow = _xMin;
                         else xlow = migrationHist->GetXaxis()->GetBinLowEdge(i);
 
                         if(i==nBinsReco+1) xhi = _xMax;
-                        else xhi  = migrationHist->GetXaxis()->GetBinUpEdge (i);
+                        else xhi  = migrationHist->GetXaxis()->GetBinUpEdge(i);
 
                         if(j==0) ylow = _xMin;
                         else ylow = migrationHist->GetYaxis()->GetBinLowEdge(j);
 
                         if(j==nBinsTrue+1) yhi = _xMax;
-                        else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge (j);
+                        else  yhi  = migrationHist->GetYaxis()->GetBinUpEdge(j);
 
                         double nEntries = _matrixFunc->Integral(xlow,xhi,ylow,yhi);
 			migrationHist->SetBinContent(i,j,nEntries);
+		if(i==0) cout << "bin " << j << ": ["<< ylow << ", " << yhi << "]" << endl;
                 }//end loop over rows
+		cout << "bin " << i << ": ["<< xlow << ", " << xhi << "]" << endl;
         }//end loop over columns
 	makeResponseMatrix(migrationHist);
 	return migrationHist;

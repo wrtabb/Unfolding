@@ -18,7 +18,6 @@ double trueDistribution(double*var,double*par)
 
         double value = (norm/TMath::Power((x+shift),power))+norm*peakNormRel*
 		       ROOT::Math::breitwigner_pdf(x,peakWidth,peakMean); 
-
         return value;
 }
 
