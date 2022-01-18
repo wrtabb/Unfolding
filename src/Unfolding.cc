@@ -15,6 +15,7 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	cout << "*****************************************" << endl;
 	cout << endl;
 
+    // Blank histogram created as a placeholder
 	TH1F*hBlank = new TH1F("hBlank","",1,0,1);
 	int nBinsReco = hReco->GetNbinsX();
 	int nBinsTrue = hTrue->GetNbinsX();
@@ -26,6 +27,8 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 		cout << "Closing unfolding script" << endl;
 		return hBlank;
 	}
+
+	// Most of the parameters listed below iare chosen somewhat aribitrarily
 
 	////////////////////////////
 	//  Regularization Modes  //
@@ -72,7 +75,7 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	if(regType == VAR_REG_LCURVE){
 		Int_t nScan=30;//This number chosen only because it was given in the tutorial
 		Double_t tauMin = 0.0;//If tauMin=tauMax, TUnfold automatically chooses a range
-		Double_t tauMax = 0.0;//Not certain how they choose the range
+		Double_t tauMax = 0.0;//Not certain how TUnfold chooses the range
 		iBest=unfold.ScanLcurve(nScan,tauMin,tauMax,&lCurve,&logTauX,&logTauY);
 		cout<< "tau=" << unfold.GetTau() << endl;
 		cout<<"chi**2="<<unfold.GetChi2A()<<"+"<<unfold.GetChi2L()<<" / "<<unfold.GetNdf()<<"\n";
@@ -163,12 +166,12 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	hUnfolded->SetLineColor(kBlue+2);
 	hUnfolded->SetFillColor(kWhite);
 
-	//define the ratio plot to easily see how well the unfolded result matches the true one
+	//define the ratio plot
 	TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
 	ratio->Divide(hTrue);
 	ratio->SetTitle("");
 
-
+    //define the legend
 	TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
 	legend->SetTextSize(0.02);
 	legend->AddEntry(hTrue,"True Distribution");
@@ -181,7 +184,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	float xRange = xMax-xMin;
 	float yMax = 1.1*peakMax;
 	double xChiLabel;
-        double yChiLabel;
+    double yChiLabel;
 
 	if(logPlot){
 		xChiLabel = xRange*0.2+xMin;
@@ -256,11 +259,6 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 
 double Unfold::GetConditionNumber(TH2F*hResponse)
 {
-	//This function obtains the condition number of the response matrix
-	//This is important because it tells us about how diagonal the matrix is
-	//which gives an idea of how well unfolding will work
-	//This helps us figure out if we need to use regularization or not
-	//Small enough condition numbers mean no regularization is needed
 	
 	TString histName = hResponse->GetName();
 	int nBinsX = hResponse->GetNbinsX();
@@ -277,7 +275,7 @@ double Unfold::GetConditionNumber(TH2F*hResponse)
 	return condition;
 }//end GetConditionNumber
 
-TH2F*Unfold::makeResponseMatrix(TH2F*hist)
+TH2F*Unfold::makeResponseMatrix(TH2F*hist,bool trueVert)
 {
 	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
 	int nBinsX = hResponse->GetNbinsX();
@@ -286,22 +284,45 @@ TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 	double binContent;
 	double scaledContent;
 	
-	//Loop over all true bins (the y-axis)
-	for(int j=0;j<=nBinsY+1;j++){
-		nEntriesX = 0.0;
-		//for each true bin, sum up the number of events across all reco bins
-		for(int i=0;i<=nBinsX+1;i++){
-			binContent = hist->GetBinContent(i,j);
-			nEntriesX += binContent;
-		}//end first loop over reco bins
-		//For each true bin scale the bin content by the number of entries in all
-		//reco bins, then place this content into the new matrix
-		for(int i=0;i<=nBinsX+1;i++){
-			scaledContent = hist->GetBinContent(i,j)/nEntriesX;
-			hResponse->SetBinContent(i,j,scaledContent);
-		}//end second loop over reco bins
-	}//end loop over true bins
+    // true distribution on y-axis
+    // reco distribution on x-axis
+    if(trueVert){
+        //Loop over all true bins (the y-axis)
+        for(int j=0;j<=nBinsY+1;j++){
+            nEntriesX = 0.0;
+            //for each true bin, sum up the number of events across all reco bins
+            for(int i=0;i<=nBinsX+1;i++){
+                binContent = hist->GetBinContent(i,j);
+                nEntriesX += binContent;
+            }//end first loop over reco bins
+            //For each true bin scale the bin content by the number of entries in all
+            //reco bins, then place this content into the new matrix
+            for(int i=0;i<=nBinsX+1;i++){
+                scaledContent = hist->GetBinContent(i,j)/nEntriesX;
+                hResponse->SetBinContent(i,j,scaledContent);
+            }//end second loop over reco bins
+        }//end loop over true bins
+    }// end if trueVert
 
+    // true distribution on x-axis
+    // reco distribution on y-axis
+    else{
+        //Loop over all true bins (the x-axis)
+        for(int i=0;i<=nBinsX+1;i++){
+            nEntriesY = 0.0;
+            //for each true bin, sum up the number of events across all reco bins
+            for(int j=0;j<=nBinsY+1;j++){
+                binContent = hist->GetBinContent(i,j);
+                nEntriesY += binContent;
+            }//end first loop over reco bins
+            //For each true bin scale the bin content by the number of entries in all
+            //reco bins, then place this content into the new matrix
+            for(int j=0;j<=nBinsY+1;j++){
+                scaledContent = hist->GetBinContent(i,j)/nEntriesY;
+                hResponse->SetBinContent(i,j,scaledContent);
+            }//end second loop over reco bins
+        }//end loop over true bins
+    }// end if !trueVert
 	return hResponse;
 }//end makeResponseMatrix
 
@@ -426,7 +447,6 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");
 	
-
 	if(printCondition){ condition = GetConditionNumber(hMatrix);
 		xPosition = 15;
 		yPosition = 5;
@@ -440,33 +460,3 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SaveAs(save);	
 	delete canvas;
 }
-
-TH2F*Unfold::makeResponseMatrixT(TH2F*hist)
-{
-	//Here we normalize for each reco bin instead of each true bin
-	//This is to investigate how events migrate into a given reco bin
-	TH2F*hResponseT = (TH2F*)hist->Clone("hResponseT");
-	int nBinsX = hResponseT->GetNbinsX();
-	int nBinsY = hResponseT->GetNbinsY();
-	double nEntriesY;
-	double binContent;
-	double scaledContent;
-	
-	//Loop over all true bins (the y-axis)
-	for(int i=1;i<=nBinsX;i++){
-		nEntriesY = 0.0;
-		//for each reco bin, sum up the number of events across all reco bins
-		for(int j=1;j<=nBinsY;j++){
-			binContent = hist->GetBinContent(i,j);
-			nEntriesY += binContent;
-		}//end first loop over reco bins
-		//For each true bin scale the bin content by the number of entries in all
-		//reco bins, then place this content into the new matrix
-		for(int j=1;j<=nBinsY;j++){
-			scaledContent = hist->GetBinContent(i,j)/nEntriesY;
-			hResponseT->SetBinContent(i,j,scaledContent);
-		}//end second loop over reco bins
-	}//end loop over true bins
-
-	return hResponseT;
-}//end makeResponseMatrix

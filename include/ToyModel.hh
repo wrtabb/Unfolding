@@ -19,8 +19,8 @@ class ToyModel
 {
 	public:
 		ToyModel(double distNorm,double power,double peakNormRel,
-			 double distMean,double distSigma,double resSigma,
-			 vector<double>binningTrue,vector<double>binningReco);
+                 double distMean,double distSigma,double resSigma,
+                 vector<double>binningTrue,vector<double>binningReco);
 		TH1F*GetTrueHist(TString trueName);
 		TH1F*GetRecoHist(TString recoName);
 		TH2F*GetMigrationMatrix(TString matrixName);
@@ -60,14 +60,5 @@ double resolutionFunction(double*var,double*par);
 double recoDistribution(double*var,double*par);
 double integrand1D(double*var,double*par);
 double integrand2D(double*var,double*par);
-
-
-
-
-
-
-
-
-
 
 #endif
