@@ -1,6 +1,5 @@
 #include "../include/Unfolding.hh"
 using namespace Utilities;
-using namespace GlobalVariables;
 
 Unfold::Unfold()
 {
@@ -9,22 +8,22 @@ Unfold::Unfold()
 
 Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 {
-    _hReco = hReco;
-    _hTrue = hTrue;
-    _hMatrix = hMatrix;
-	_hResponse = makeResponseMatrix(_hMatrix);
-    _condition = GetConditionNumber(_hResponse);
+    // calclate global parameters
+    _hReco = hReco; // reconstructed distribution
+    _hTrue = hTrue; // true distribution
+    _hMatrix = hMatrix;// matrix of migrations
+	_hResponse = makeResponseMatrix(_hMatrix); // normalized migration matrix
+    _condition = GetConditionNumber(_hResponse); // condition number
+	_nBinsReco = _hReco->GetNbinsX(); // number of reco bins
+	_nBinsTrue = _hTrue->GetNbinsX(); // number of true bins
 
-	_nBinsReco = _hReco->GetNbinsX();
-	_nBinsTrue = _hTrue->GetNbinsX();
-
+    // Determine if true distribution is on the vertical or horizontal axis
     int nBinsX = _hMatrix->GetNbinsX();
     int nBinsY = _hMatrix->GetNbinsY();
-
     if(nBinsY == _nBinsTrue) _trueVert = true;
     else if(nBinsY == _nBinsReco) _trueVert = false;
 
-	if(_nBinsReco<=_nBinsTrue){
+	if(_nBinsReco==_nBinsTrue){
 		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
 		cout << "Input bins: " << _nBinsReco << endl;
 		cout << "Output bins: " << _nBinsTrue << endl;
@@ -48,8 +47,6 @@ void Unfold::unfoldTUnfold(RegType regType)
     TH1F*hReco = _hReco;
     TH1F*hTrue = _hTrue;
     TH2F*hMatrix = _hMatrix;
-
-	// Most of the parameters listed below iare chosen somewhat aribitrarily
 
 	////////////////////////////
 	//  Regularization Modes  //
@@ -76,8 +73,6 @@ void Unfold::unfoldTUnfold(RegType regType)
 	/////////////////////////////////////
 	//  Horizontal vs Vertical Output  //
 	/////////////////////////////////////
-	// This might be backward ... 
-	// Check it!
 	TUnfold::EHistMap outputMap;
 	if(_trueVert) outputMap = TUnfold::kHistMapOutputVert;
 	else outputMap = TUnfold::kHistMapOutputHoriz;

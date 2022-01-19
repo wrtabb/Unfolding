@@ -5,8 +5,6 @@
 #include <TH2F.h>
 
 namespace Utilities{
-	// RebinTH1 works in the macros in the main directory
-	// But does not work in the class Unfold in src/Unfolding.cc
 	TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
 	{
 		int nBinsOld = hist->GetNbinsX();
@@ -51,14 +49,13 @@ namespace Utilities{
 				if(oldBinUpperEdge > newBinUpperEdge) continue;
 				k = j;
 				newError2 += hist->GetBinError(j)*hist->GetBinError(j);
-			}
+			}// end loop over j bins
 			hRebin->SetBinError(i,sqrt(newError2));
-		}
+		}// end loop over i bins
 		return hRebin;
 
-	}
+	}// end Rebin1D
 
-	// RebinTH2 seems to work everywhere I use it
 	TH2F*RebinTH2(TH2F*hist,TString histName,TH1F*hBinning)
 	{
 		int nBinsOld = hist->GetNbinsX();
@@ -109,86 +106,11 @@ namespace Utilities{
 				k = j;
 				newError2 += hist->GetBinError(i,j)*hist->GetBinError(i,j);
 				hRebin->SetBinError(i,j,sqrt(newError2));
-			}
-		}
+			}// end j loop
+		}// end i loop
 		return hRebin;
 
-	}
-
-	TH2F*makeResponseMatrix(TH2F*hist)
-	{
-		TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
-		int nBinsX = hResponse->GetNbinsX();
-		int nBinsY = hResponse->GetNbinsY();
-		double nEntriesX;
-		double binContent;
-		double scaledContent;
-
-		for(int j=0;j<=nBinsY+1;j++){
-			nEntriesX = 0.0;
-			for(int i=0;i<=nBinsX+1;i++){
-				hResponse->SetBinContent(i,j,0);
-				binContent = hist->GetBinContent(i,j);
-				nEntriesX += binContent;
-			}//end first loop over reco bins
-			for(int i=0;i<=nBinsX+1;i++){
-				scaledContent = hist->GetBinContent(i,j)/nEntriesX;
-				if(scaledContent > 1e-4) 
-					hResponse->SetBinContent(i,j,scaledContent);
-				hResponse->SetBinContent(i,j,scaledContent);
-			}//end second loop over reco bins
-		}//end loop over true bins
-
-		return hResponse;
-	}//end makeResponseMatrix
-
-	TH2F*makeResponseMatrixT(TH2F*hist)
-	{
-		TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
-		int nBinsX = hResponse->GetNbinsX();
-		int nBinsY = hResponse->GetNbinsY();
-		double nEntriesY;
-		double binContent;
-		double scaledContent;
-
-		for(int i=0;i<=nBinsX+1;i++){
-			nEntriesY = 0.0;
-			for(int j=0;j<=nBinsY+1;j++){
-				hResponse->SetBinContent(i,j,0);
-				binContent = hist->GetBinContent(i,j);
-				nEntriesY += binContent;
-			}//end first loop over reco bins
-			for(int j=0;j<=nBinsY+1;j++){
-				scaledContent = hist->GetBinContent(i,j)/nEntriesY;
-				if(scaledContent > 1e-4) 
-					hResponse->SetBinContent(i,j,scaledContent);
-			}//end second loop over reco bins
-		}//end loop over true bins
-
-		return hResponse;
-	}//end makeResponseMatrix
-
-TCanvas*PlotMatrix(TString canvasName,TString plotTitle,TH2F*hist,bool logPlot)
-{
-        TCanvas*c1 = new TCanvas(canvasName,"",0,0,1000,1000);
-        if(logPlot){
-                c1->SetLogx();
-                c1->SetLogy();
-                hist->GetYaxis()->SetNoExponent();
-                hist->GetXaxis()->SetNoExponent();
-                hist->GetYaxis()->SetMoreLogLabels();
-                hist->GetXaxis()->SetMoreLogLabels();
-        }
-        c1->SetGrid();
-        c1->SetRightMargin(0.13);
-        c1->SetLeftMargin(0.13);
-        hist->SetTitle(plotTitle);
-        hist->GetYaxis()->SetTitle("mass^{true} [GeV]");
-        hist->GetXaxis()->SetTitle("mass^{obs} [GeV]");
-        hist->Draw("colz");
-        return c1;
-}
-
+	}// end Rebin2D
 }//end namespace
 
 #endif
