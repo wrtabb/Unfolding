@@ -39,7 +39,7 @@ void Unfold::unfoldTUnfold(RegType regType)
 	cout << "*****************************************" << endl;
 	cout << endl;
 
-    if(!_hReco || !_hTrue || !_hMatrix){
+    if(_hReco == NULL || _hTrue == NULL || _hMatrix == NULL){
         cout << "The reco and true distributions and the matrix of migrations must be specified to carry out unfolding" << endl;
         cout << "Please check that these are properly defined and try again" << endl;
         return;
