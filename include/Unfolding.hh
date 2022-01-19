@@ -11,8 +11,8 @@
 #include <TRandom3.h>
 #include <TCanvas.h>
 #include <iostream>
-#include <TUnfold.h>
-#include <TUnfoldDensity.h>
+//#include <TUnfold.h>
+//#include <TUnfoldDensity.h>
 #include <TSpline.h>
 #include <TGraph.h>
 #include <TLegend.h>
@@ -28,12 +28,6 @@
 class Unfold
 {
 	public:
-		//-----Variables-----//
-		double mean;
-		double condition;
-		int nBinsReco;
-		int nBinsTrue;
-		
 		//-------Enums-------//
 		enum RegType {        //Strength of regularization
             NO_REG,           //No regularization
@@ -51,6 +45,7 @@ class Unfold
 
         /// Constructed for Unfold
 		Unfold();
+		Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
         /** 
          * \\Performs the unfolding using TUnfold
          * RegType regType is the type of regularization to be used
@@ -90,7 +85,7 @@ class Unfold
          * Currently this only normalizes rows, but may add functionality to do both
          * For now place true distribution along y-axis and reco along x-axis
          */ 
-		TH2F*makeResponseMatrix(TH2F*hist,bool trueVert);
+		TH2F*makeResponseMatrix(TH2F*hist);
 
         /**
          * \\Make a matrix from a given 2D histogram
@@ -132,6 +127,26 @@ class Unfold
          * on the plot or not
          */
 		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);
+
+        void SetMatrix(TH2F*hist);
+        void SetReco(TH1F*hist);
+        void SetTrue(TH1F*hist);
+
+    private:
+		//-----Variables-----//
+		double _mean;
+		double _condition;
+		int _nBinsReco;
+		int _nBinsTrue;
+        bool _trueVert;
+
+        TH1F*_hReco;
+        TH1F*_hTrue;
+        TH1F*_hBack;
+        TH1F*_hBlank;
+        TH2F*_hMatrix;
+        TH2F*_hResponse;
+		
 };//end class Unfold
 
 #endif

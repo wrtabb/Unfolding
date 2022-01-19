@@ -7,7 +7,52 @@ Unfold::Unfold()
 
 }
 
-TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
+Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
+{
+    _hReco = hReco;
+    _hTrue = hTrue;
+    _hMatrix = hMatrix;
+	_hResponse = makeResponseMatrix(_hMatrix);
+
+	_nBinsReco = _hReco->GetNbinsX();
+	_nBinsTrue = _hTrue->GetNbinsX();
+
+    int nBinsX = _hMatrix->GetNbinsX();
+    int nBinsY = _hMatrix->GetNbinsY();
+
+    if(nBinsY == _nBinsTrue) _trueVert = true;
+    else if(nBinsY == _nBinsReco) _trueVert = false;
+
+	if(_nBinsReco<=_nBinsTrue){
+		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
+		cout << "Input bins: " << _nBinsReco << endl;
+		cout << "Output bins: " << _nBinsTrue << endl;
+		cout << "Closing unfolding script" << endl;
+		return _hBlank;
+	}
+}
+
+void Unfold::SetMatrix(TH2F*hist)
+{
+    _hMatrix = hist;
+
+    // This temporarily assumed true is on the Y axis
+    // Will change soon
+	_nBinsReco = _hist->GetNbinsX();
+	_nBinsTrue = _hist->GetNbinsY();
+}
+void Unfold::SetReco(TH1F*hist)
+{
+    _hReco = hist;
+	_nBinsReco = _hist->GetNbinsX();
+}
+void Unfold::SetTrue(TH1F*hist)
+{
+    _hTrue = hist;
+	_nBinsTrue = _hist->GetNbinsY();
+}
+
+TH1F*Unfold::unfoldTUnfold(RegType regType)
 {
 	cout << endl;
 	cout << "*****************************************" << endl;
@@ -15,18 +60,15 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	cout << "*****************************************" << endl;
 	cout << endl;
 
-    // Blank histogram created as a placeholder
-	TH1F*hBlank = new TH1F("hBlank","",1,0,1);
-	int nBinsReco = hReco->GetNbinsX();
-	int nBinsTrue = hTrue->GetNbinsX();
-	
-	if(nBinsReco<=nBinsTrue){
-		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
-		cout << "Input bins: " << nBinsReco << endl;
-		cout << "Output bins: " << nBinsTrue << endl;
-		cout << "Closing unfolding script" << endl;
-		return hBlank;
-	}
+    if(!_hReco || !_hTrue || !_hMatrix){
+        cout << "The reco and true distributions and the matrix of migrations must be specified to carry out unfolding" << endl;
+        cout << "Please check that these are properly defined and try again" << endl;
+        return _hBlank;
+    }
+
+    TH1F*hReco = _hReco;
+    TH1F*hTrue = _hTrue;
+    TH2F*hMatrix = _hMatrix;
 
 	// Most of the parameters listed below iare chosen somewhat aribitrarily
 
@@ -55,8 +97,10 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	/////////////////////////////////////
 	//  Horizontal vs Vertical Output  //
 	/////////////////////////////////////
-	TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputVert;
-	//TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputHoriz;
+	// This might be backward ... 
+	// Check it!
+	if(_trueVert) TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputVert;
+	else TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputHoriz;
 	
 	//////////////////////////////////////
 	//  Constructor for TUnfoldDensity  //
@@ -87,11 +131,11 @@ TH1F*Unfold::unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	}
 	else if(regType == VAR_REG_SCANSURE){
 		cout << "Option VAR_REG_SCANSURE not yet implemented" << endl;
-		return hBlank;
+		return _hBlank;
 	}
 	else if(regType == VAR_REG_SCANTAU){
 		cout << "Option VAR_REG_SCANTAU not yet implemented" << endl;
-		return hBlank;
+		return _hBlank;
 	}
 	else if(regType == NO_REG){
 		double tau = 0;
@@ -141,8 +185,6 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 	//Get parameters for histograms
 	//These are used to define the canvases and pads
 	//as well as the locations of drawn objects
-	int nBinsTrue = hTrue->GetNbinsX();
-	int nBinsReco = hReco->GetNbinsX();
 	int binLow = hTrue->GetBinLowEdge(1);
 	int binHigh = hTrue->GetBinLowEdge(nBinsTrue)+hTrue->GetBinWidth(nBinsTrue);
 	float peakMax = 0;	
@@ -266,17 +308,18 @@ double Unfold::GetConditionNumber(TH2F*hResponse)
 	TMatrixD matrix = makeMatrixFromHist(hResponse);
 
 	TDecompSVD decomp(matrix);
-	double condition = decomp.Condition();
-	cout << "The condition number for " << histName << ": " << condition << endl;
+	_condition = decomp.Condition();
+	cout << "The condition number for " << histName << ": " << _condition << endl;
 
 	double determinant;
 	TMatrixD mInverse = matrix.Invert(&determinant);
 	cout << "The determinant of " << histName << " is " << determinant << endl;
-	return condition;
+	return _condition;
 }//end GetConditionNumber
 
-TH2F*Unfold::makeResponseMatrix(TH2F*hist,bool trueVert)
+TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 {
+    bool trueVert = _trueVert;
 	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
@@ -447,11 +490,11 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");
 	
-	if(printCondition){ condition = GetConditionNumber(hMatrix);
+	if(printCondition){ _condition = GetConditionNumber(hMatrix);
 		xPosition = 15;
 		yPosition = 5;
 		conditionLabel = new TLatex(xPosition,yPosition,
-                                	    Form("condition number = %lg",condition));
+                                	    Form("condition number = %lg",_condition));
 		conditionLabel->Draw("same");
 	}
 
