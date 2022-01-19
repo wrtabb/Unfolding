@@ -11,8 +11,8 @@
 #include <TRandom3.h>
 #include <TCanvas.h>
 #include <iostream>
-//#include <TUnfold.h>
-//#include <TUnfoldDensity.h>
+#include <TUnfold.h>
+#include <TUnfoldDensity.h>
 #include <TSpline.h>
 #include <TGraph.h>
 #include <TLegend.h>
@@ -54,7 +54,7 @@ class Unfold
          * TH2F*hMatrix is the matrix of migrations for unfolding. 
          * This does not need to be normalized
          */ 
-		TH1F*unfoldTUnfold(RegType regType,TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
+		void unfoldTUnfold(RegType regType);
         /**
          * \\ Produces plot of unfolded distribution with true and reco distributions
              * TString canvasName is the name given to the TCanvas
@@ -64,8 +64,7 @@ class Unfold
          * TH1F*hUnfolded is the unfolded distribution
          * bool logPlot determines if the x-axis is defined on a log scale or not
          */
-		TCanvas*plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,
-				     TH1F*hTrue,TH1F*hUnfolded,bool logPlot);
+		TCanvas*plotUnfolded(TString canvasName,TString titleName,bool logPlot);
         /**
          * \\Calculates the condition number of the response matrix
          * TH2F*hResponse is the response matrix
@@ -128,9 +127,11 @@ class Unfold
          */
 		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);
 
-        void SetMatrix(TH2F*hist);
         void SetReco(TH1F*hist);
         void SetTrue(TH1F*hist);
+        void SetBackground(TH1F*hist);
+        void SetMatrix(TH2F*hist);
+        double ReturnCondition();
 
     private:
 		//-----Variables-----//
@@ -139,11 +140,14 @@ class Unfold
 		int _nBinsReco;
 		int _nBinsTrue;
         bool _trueVert;
+        bool _backgroundSubtraction = false;
 
+        //-----Histograms-----//
         TH1F*_hReco;
         TH1F*_hTrue;
         TH1F*_hBack;
         TH1F*_hBlank;
+        TH1F*_hUnfolded;
         TH2F*_hMatrix;
         TH2F*_hResponse;
 		

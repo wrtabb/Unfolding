@@ -13,6 +13,7 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
     _hTrue = hTrue;
     _hMatrix = hMatrix;
 	_hResponse = makeResponseMatrix(_hMatrix);
+    _condition = GetConditionNumber(_hResponse);
 
 	_nBinsReco = _hReco->GetNbinsX();
 	_nBinsTrue = _hTrue->GetNbinsX();
@@ -27,32 +28,10 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 		cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
 		cout << "Input bins: " << _nBinsReco << endl;
 		cout << "Output bins: " << _nBinsTrue << endl;
-		cout << "Closing unfolding script" << endl;
-		return _hBlank;
 	}
 }
 
-void Unfold::SetMatrix(TH2F*hist)
-{
-    _hMatrix = hist;
-
-    // This temporarily assumed true is on the Y axis
-    // Will change soon
-	_nBinsReco = _hist->GetNbinsX();
-	_nBinsTrue = _hist->GetNbinsY();
-}
-void Unfold::SetReco(TH1F*hist)
-{
-    _hReco = hist;
-	_nBinsReco = _hist->GetNbinsX();
-}
-void Unfold::SetTrue(TH1F*hist)
-{
-    _hTrue = hist;
-	_nBinsTrue = _hist->GetNbinsY();
-}
-
-TH1F*Unfold::unfoldTUnfold(RegType regType)
+void Unfold::unfoldTUnfold(RegType regType)
 {
 	cout << endl;
 	cout << "*****************************************" << endl;
@@ -63,7 +42,7 @@ TH1F*Unfold::unfoldTUnfold(RegType regType)
     if(!_hReco || !_hTrue || !_hMatrix){
         cout << "The reco and true distributions and the matrix of migrations must be specified to carry out unfolding" << endl;
         cout << "Please check that these are properly defined and try again" << endl;
-        return _hBlank;
+        return;
     }
 
     TH1F*hReco = _hReco;
@@ -99,14 +78,20 @@ TH1F*Unfold::unfoldTUnfold(RegType regType)
 	/////////////////////////////////////
 	// This might be backward ... 
 	// Check it!
-	if(_trueVert) TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputVert;
-	else TUnfold::EHistMap outputMap = TUnfold::kHistMapOutputHoriz;
+	TUnfold::EHistMap outputMap;
+	if(_trueVert) outputMap = TUnfold::kHistMapOutputVert;
+	else outputMap = TUnfold::kHistMapOutputHoriz;
 	
+
 	//////////////////////////////////////
 	//  Constructor for TUnfoldDensity  //
 	//////////////////////////////////////
 	TUnfoldDensity unfold(hMatrix,outputMap,regMode,constraintMode,densityFlags);
 	unfold.SetInput(hReco);//the measured distribution
+    double backScale = 1.0;
+    double backScaleError = 0.0;//scale error for background
+    if(_backgroundSubtraction) 
+        unfold.SubtractBackground(_hBack,"background",backScale,backScaleError);
 
 	///////////////////////
 	//  Begin Unfolding  //
@@ -131,11 +116,11 @@ TH1F*Unfold::unfoldTUnfold(RegType regType)
 	}
 	else if(regType == VAR_REG_SCANSURE){
 		cout << "Option VAR_REG_SCANSURE not yet implemented" << endl;
-		return _hBlank;
+		return;
 	}
 	else if(regType == VAR_REG_SCANTAU){
 		cout << "Option VAR_REG_SCANTAU not yet implemented" << endl;
-		return _hBlank;
+		return;
 	}
 	else if(regType == NO_REG){
 		double tau = 0;
@@ -155,41 +140,33 @@ TH1F*Unfold::unfoldTUnfold(RegType regType)
 	TH2*histEmatStat=unfold.GetEmatrixInput("hEmatrixInput");
 	TH2*histEmatTotal=unfold.GetEmatrixTotal("hEmatrixTotal");
 
-	TCanvas*c18 = new TCanvas("c18","",0,0,1000,1000);
-	c18->SetGrid();
-	histEmatTotal->Draw("colz");
-	c18->SaveAs("plots/tunfoldCovariance.png");
-
 	//Create unfolding histogram with errors
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedTUnfold");
 
 	//loop over unfolded histogram bins and assign errors to each one
-	for(int i=0;i<=nBinsTrue;i++){
+	for(int i=0;i<=_nBinsTrue;i++){
 		double binError = TMath::Sqrt(histEmatTotal->GetBinContent(i+1,i+1));
   		hUnfoldedE->SetBinError(i+1,binError);
  	}
 
-	TFile*errorFile = new TFile("data/errorMatrixTUnfold.root","recreate");
-	hUnfoldedE->Write();
-	histEmatStat->Write();
-	histEmatTotal->Write();
-	errorFile->Close();
-
-	return hUnfoldedE;
+	_hUnfolded = hUnfoldedE;
 }//end unfoldTUnfold
 
-TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1F*hTrue,
-			     TH1F*hUnfolded,bool logPlot)
+TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
 {
 	gStyle->SetOptStat(0);
+    TH1F*hReco = _hReco;
+    TH1F*hTrue = _hTrue;
+    TH1F*hUnfolded = _hUnfolded;
+
 	//Get parameters for histograms
 	//These are used to define the canvases and pads
 	//as well as the locations of drawn objects
 	int binLow = hTrue->GetBinLowEdge(1);
-	int binHigh = hTrue->GetBinLowEdge(nBinsTrue)+hTrue->GetBinWidth(nBinsTrue);
+	int binHigh = hTrue->GetBinLowEdge(_nBinsTrue)+hTrue->GetBinWidth(_nBinsTrue);
 	float peakMax = 0;	
 	float binContent;
-	for(int i=1;i<=nBinsTrue;i++){
+	for(int i=1;i<=_nBinsTrue;i++){
 		binContent = hTrue->GetBinContent(i);
 		if(binContent > peakMax) peakMax = binContent;
 	}
@@ -236,7 +213,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,TH1F*hReco,TH1
 		xChiLabel = xRange*0.66+xMin;
 		yChiLabel = yMax*0.7;
 	}
-	double x[nBinsTrue],res[nBinsTrue];
+	double x[_nBinsTrue],res[_nBinsTrue];
 	double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
 	double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
 	TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
@@ -323,7 +300,7 @@ TH2F*Unfold::makeResponseMatrix(TH2F*hist)
 	TH2F*hResponse = (TH2F*)hist->Clone("hResponse");
 	int nBinsX = hResponse->GetNbinsX();
 	int nBinsY = hResponse->GetNbinsY();
-	double nEntriesX;
+	double nEntriesX,nEntriesY;
 	double binContent;
 	double scaledContent;
 	
@@ -435,7 +412,7 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2F*hNorm = makeResponseMatrix(hist3);
 	int nBinsTrue = hist2->GetNbinsX();
 	int nBinsReco = hist1->GetNbinsX();
-	double conditionNumber = GetConditionNumber(hNorm);
+	double conditionNumber = _condition;
 	cout << "Condition number: " << conditionNumber << endl;
 	cout << "Number of output bins: " << nBinsTrue << endl;
 	cout << "Number of input bins: " << nBinsReco << endl;
@@ -502,4 +479,47 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	TString save = saveDirectory+saveName+".png";
 	canvas->SaveAs(save);	
 	delete canvas;
+}
+
+void Unfold::SetBackground(TH1F*hist)
+{
+    _hBack = hist;
+    _backgroundSubtraction = true;
+}
+
+void Unfold::SetMatrix(TH2F*hist)
+{
+    _hMatrix = hist;
+
+    int nBinsX = _hMatrix->GetNbinsX();
+    int nBinsY = _hMatrix->GetNbinsY();
+
+    if(nBinsY == _nBinsTrue) _trueVert = true;
+    else if(nBinsY == _nBinsReco) _trueVert = false;
+
+    if(_trueVert){
+        _nBinsReco = hist->GetNbinsX();
+        _nBinsTrue = hist->GetNbinsY();
+    }
+    else{
+        _nBinsReco = hist->GetNbinsY();
+        _nBinsTrue = hist->GetNbinsX();
+    }
+}
+
+void Unfold::SetReco(TH1F*hist)
+{
+    _hReco = hist;
+	_nBinsReco = hist->GetNbinsX();
+}
+
+void Unfold::SetTrue(TH1F*hist)
+{
+    _hTrue = hist;
+	_nBinsTrue = hist->GetNbinsY();
+}
+
+double Unfold::ReturnCondition()
+{
+    return _condition;
 }
