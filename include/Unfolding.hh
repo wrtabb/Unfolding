@@ -22,7 +22,6 @@
 #include <TStyle.h>
 #include <TString.h>
 
-#include "GlobalVariables.h"
 #include "Utilities.h"//custom utilities used in analysis
 
 class Unfold
@@ -84,7 +83,7 @@ class Unfold
          * Currently this only normalizes rows, but may add functionality to do both
          * For now place true distribution along y-axis and reco along x-axis
          */ 
-		TH2F*makeResponseMatrix(TH2F*hist);
+		void makeResponseMatrix(TH2F*hist);
 
         /**
          * \\Make a matrix from a given 2D histogram
@@ -132,6 +131,12 @@ class Unfold
         void SetBackground(TH1F*hist);
         void SetMatrix(TH2F*hist);
         double ReturnCondition();
+        TH1F*ReturnUnfolded();
+        TH2F*ReturnResponseMatrix();
+        TH1F*ReturnReco();
+        TH1F*ReturnTrue();
+        TH1F*ReturnBackground();
+        TH2F*ReturnMatrix();
 
     private:
 		//-----Variables-----//
