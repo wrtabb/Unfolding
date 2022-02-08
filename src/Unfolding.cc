@@ -6,16 +6,24 @@ Unfold::Unfold()
 
 }
 
-Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
+Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType)
 {
     // calclate global parameters
     _hReco = hReco; // reconstructed distribution
     _hTrue = hTrue; // true distribution
     _hMatrix = hMatrix;// matrix of migrations
     makeResponseMatrix(_hMatrix); // normalized migration matrix
-    _condition = GetConditionNumber(_hResponse); // condition number
+    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue);
+    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    cout << "response matrix x-axis bins: " << _hResponse->GetNbinsY() << endl;
+    cout << "square matrix x-axis bins: " << _hResponseSquare->GetNbinsY() << endl;
+    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    _condition = GetConditionNumber(); // condition number
     _nBinsReco = _hReco->GetNbinsX(); // number of reco bins
     _nBinsTrue = _hTrue->GetNbinsX(); // number of true bins
+    _regType = regType; // regularization type
 
     // Determine if true distribution is on the vertical or horizontal axis
     int nBinsX = _hMatrix->GetNbinsX();
@@ -30,7 +38,7 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
     }
 }
 
-void Unfold::unfoldTUnfold(RegType regType)
+void Unfold::unfoldTUnfold()
 {
     cout << endl;
     cout << "*****************************************" << endl;
@@ -96,7 +104,7 @@ void Unfold::unfoldTUnfold(RegType regType)
     TGraph *lCurve;
     TGraph*bestLcurve;
     TGraph*bestLogTauLogChi2;
-    if(regType == VAR_REG_LCURVE){
+    if(_regType == VAR_REG_LCURVE){
         Int_t nScan=30;//This number chosen only because it was given in the tutorial
         Double_t tauMin = 0.0;//If tauMin=tauMax, TUnfold automatically chooses a range
         Double_t tauMax = 0.0;//Not certain how TUnfold chooses the range
@@ -109,15 +117,15 @@ void Unfold::unfoldTUnfold(RegType regType)
         bestLcurve=new TGraph(1,x,y);
         bestLogTauLogChi2=new TGraph(1,t,x);
     }
-    else if(regType == VAR_REG_SCANSURE){
+    else if(_regType == VAR_REG_SCANSURE){
         cout << "Option VAR_REG_SCANSURE not yet implemented" << endl;
         return;
     }
-    else if(regType == VAR_REG_SCANTAU){
+    else if(_regType == VAR_REG_SCANTAU){
         cout << "Option VAR_REG_SCANTAU not yet implemented" << endl;
         return;
     }
-    else if(regType == NO_REG){
+    else if(_regType == NO_REG){
         double tau = 0;
         unfold.DoUnfold(tau,hReco);
     }
@@ -150,51 +158,48 @@ void Unfold::unfoldTUnfold(RegType regType)
 TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
 {
     gStyle->SetOptStat(0);
-    TH1F*hReco = _hReco;
-    TH1F*hTrue = _hTrue;
-    TH1F*hUnfolded = _hUnfolded;
 
     //Get parameters for histograms
     //These are used to define the canvases and pads
     //as well as the locations of drawn objects
-    int binLow = hTrue->GetBinLowEdge(1);
-    int binHigh = hTrue->GetBinLowEdge(_nBinsTrue)+hTrue->GetBinWidth(_nBinsTrue);
+    int binLow = _hTrue->GetBinLowEdge(1);
+    int binHigh = _hTrue->GetBinLowEdge(_nBinsTrue)+_hTrue->GetBinWidth(_nBinsTrue);
     float peakMax = 0;	
     float binContent;
     for(int i=1;i<=_nBinsTrue;i++){
-        binContent = hTrue->GetBinContent(i);
+        binContent = _hTrue->GetBinContent(i);
         if(binContent > peakMax) peakMax = binContent;
     }
 
     //Rebin reco to plot alongside true for easy comparison
-    TH1F*hRecoRebin2 = RebinTH1(hReco,"hRecoRebin2",hTrue);
+    TH1F*hRecoRebin2 = RebinTH1(_hReco,"hRecoRebin2",_hTrue);
 
     //set histogram drawing options
-    hTrue->SetFillColor(kRed+2);
-    hTrue->SetLineColor(kRed+2);
+    _hTrue->SetFillColor(kRed+2);
+    _hTrue->SetLineColor(kRed+2);
     hRecoRebin2->SetMarkerStyle(20);
     hRecoRebin2->SetMarkerColor(kBlack);
     hRecoRebin2->SetLineColor(kBlack);
-    hUnfolded->SetMarkerStyle(25);
-    hUnfolded->SetMarkerColor(kBlue+2);
-    hUnfolded->SetLineColor(kBlue+2);
-    hUnfolded->SetFillColor(kWhite);
+    _hUnfolded->SetMarkerStyle(25);
+    _hUnfolded->SetMarkerColor(kBlue+2);
+    _hUnfolded->SetLineColor(kBlue+2);
+    _hUnfolded->SetFillColor(kWhite);
 
     //define the ratio plot
-    TH1F*ratio = (TH1F*)hUnfolded->Clone("ratio");
-    ratio->Divide(hTrue);
+    TH1F*ratio = (TH1F*)_hUnfolded->Clone("ratio");
+    ratio->Divide(_hTrue);
     ratio->SetTitle("");
 
     //define the legend
     TLegend*legend = new TLegend(0.65,0.9,0.9,0.75);
     legend->SetTextSize(0.02);
-    legend->AddEntry(hTrue,"True Distribution");
+    legend->AddEntry(_hTrue,"True Distribution");
     legend->AddEntry(hRecoRebin2,"Observed Distribution");
-    legend->AddEntry(hUnfolded,"Unfolded Distribution");
+    legend->AddEntry(_hUnfolded,"Unfolded Distribution");
 
     //Create a label that shows the chi^2 value to print on graph
-    float xMax = hTrue->GetXaxis()->GetXmax();
-    float xMin = hTrue->GetXaxis()->GetXmin();
+    float xMax = _hTrue->GetXaxis()->GetXmax();
+    float xMin = _hTrue->GetXaxis()->GetXmin();
     float xRange = xMax-xMin;
     float yMax = 1.1*peakMax;
     double xChiLabel;
@@ -209,8 +214,8 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
         yChiLabel = yMax*0.7;
     }
     double x[_nBinsTrue],res[_nBinsTrue];
-    double chi = hUnfolded->Chi2Test(hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
-    double pValues = hUnfolded->Chi2Test(hTrue,"P",res);//outputs chi2,prob,ndf,igood
+    double chi = _hUnfolded->Chi2Test(_hTrue,"CHI2/NDF",res);//chi2/ndf to print on plot
+    double pValues = _hUnfolded->Chi2Test(_hTrue,"P",res);//outputs chi2,prob,ndf,igood
     TLatex*chiLabel = new TLatex(xChiLabel,yChiLabel,Form("#chi^{2}/ndf = %lg", chi));
 
     //Draw canvas and pads to make plot
@@ -229,14 +234,14 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
     pad1->SetTicks(1,1);
     pad1->Draw();
     pad1->cd();
-    hTrue->SetLabelSize(0);
-    hTrue->SetTitleSize(0);
-    hTrue->SetMinimum(yAxisMinimum);
-    //hTrue->SetMaximum(yAxisMaximum);
-    hTrue->SetTitle(titleName);
-    hTrue->Draw("hist");
+    _hTrue->SetLabelSize(0);
+    _hTrue->SetTitleSize(0);
+    _hTrue->SetMinimum(yAxisMinimum);
+    _hTrue->SetMaximum(yAxisMaximum);
+    _hTrue->SetTitle(titleName);
+    _hTrue->Draw("hist");
     hRecoRebin2->Draw("pe,same");
-    hUnfolded->Draw("pe,same");	
+    _hUnfolded->Draw("pe,same");	
     legend->Draw("same");
     chiLabel->Draw("same");
 
@@ -271,21 +276,17 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
     return canvas;
 }//end plotUnfolded
 
-double Unfold::GetConditionNumber(TH2F*hResponse)
+double Unfold::GetConditionNumber()
 {
-	
-	TString histName = hResponse->GetName();
-	int nBinsX = hResponse->GetNbinsX();
-	int nBinsY = hResponse->GetNbinsY();
-	TMatrixD matrix = makeMatrixFromHist(hResponse);
+	TMatrixD matrix = makeMatrixFromHist(_hResponseSquare);
 
 	TDecompSVD decomp(matrix);
 	_condition = decomp.Condition();
-	cout << "The condition number for " << histName << ": " << _condition << endl;
+	cout << "The condition number: " << _condition << endl;
 
 	double determinant;
 	TMatrixD mInverse = matrix.Invert(&determinant);
-	cout << "The determinant of " << histName << " is " << determinant << endl;
+	cout << "The determinant: " << determinant << endl;
 	return _condition;
 }//end GetConditionNumber
 
@@ -345,6 +346,13 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 {
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
+    if(nBinsX!=nBinsY){
+        cout << endl;
+        cout << "x and y bins do not match" << endl;
+        cout << "in Unfold::makeMatrixFromHist()" << endl;
+        cout << endl;
+    }
+
 	TMatrixD matrix(nBinsY+2,nBinsX+2);
 	for(int i=0;i<=nBinsX+1;i++){
 		for(int j=0;j<=nBinsY+1;j++){
@@ -374,7 +382,7 @@ TH1F*Unfold::makeHistFromVector(TVectorD vec,TH1F*hist)
 	return hReturn;
 }//end makeHistFromVector
 
-TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
+void Unfold::unfoldInversion()
 {
 	std::cout << endl;
 	std::cout << "**************************************************" << endl;
@@ -387,10 +395,10 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	TH2F*hist3_oldBinning = (TH2F*)_hResponse->Clone();
 
 	//For inversion method, we need the matrix to be square
-	//So here they are rebinned
-	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",hTrue);
-	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",hTrue);
-	int nBins = hist1->GetNbinsX();
+	//So here the reco and matrix are rebinned
+	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",_hTrue);
+	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",_hTrue);
+	int nBins = hist2->GetNbinsX();
 
 	//Make Vy, input covariance assuming for now that it is diagonal
 	//This is used to calculate the output covariance later to get errors
@@ -433,19 +441,17 @@ TH1F*Unfold::unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix)
 	c10->SetGrid();
 	Vx.Draw("colz");
 	c10->SaveAs("plots/inversionCovarianceTest.png");
-	TH1F*hUnfolded = makeHistFromVector(unfoldedV,hTrue);
+	TH1F*hUnfolded = makeHistFromVector(unfoldedV,_hTrue);
 	TH1F*hUnfoldedE = (TH1F*)hUnfolded->Clone("hUnfoldedInversion");
 
 	//Get error bars from diagonal of covariance matrix for unfolded histogram
-	TFile*loadError = new TFile("data/errorMatrixTUnfold.root");
-	TH2D*hError = (TH2D*)loadError->Get("hEmatrixTotal");
 	double binError;
 	for(int i=0;i<=nBinsTrue;i++){
 		binError = TMath::Sqrt(Vx(i,i));
 		hUnfoldedE->SetBinError(i,binError);
 		cout << "bin: " << i << ", % error: " << 100*binError/hUnfoldedE->GetBinContent(i) << endl;
 	}
-	return hUnfoldedE;
+    _hUnfolded = hUnfoldedE;
 }//end unfoldInversion
 
 void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
@@ -461,7 +467,7 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");
 	
-	if(printCondition){ _condition = GetConditionNumber(hMatrix);
+	if(printCondition){ _condition = GetConditionNumber();
 		xPosition = 15;
 		yPosition = 5;
 		conditionLabel = new TLatex(xPosition,yPosition,
@@ -484,7 +490,8 @@ void Unfold::SetBackground(TH1F*hist)
 void Unfold::SetMatrix(TH2F*hist)
 {
     _hMatrix = hist;
-
+    makeResponseMatrix(_hMatrix); // normalized migration matrix
+    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue);
     int nBinsX = _hMatrix->GetNbinsX();
     int nBinsY = _hMatrix->GetNbinsY();
 
@@ -511,6 +518,11 @@ void Unfold::SetTrue(TH1F*hist)
 {
     _hTrue = hist;
 	_nBinsTrue = hist->GetNbinsY();
+}
+
+void Unfold::SetRegularizationType(RegType regType)
+{
+    _regType = regType;
 }
 
 double Unfold::ReturnCondition()
@@ -548,4 +560,10 @@ TH1F*Unfold::ReturnBackground()
 TH2F*Unfold::ReturnMatrix()
 {
     return _hMatrix;
+}
+
+void Unfold::DoUnfold(UnfoldType unfType)
+{
+    if(unfType == TUNFOLD) unfoldTUnfold();
+    else if(unfType == INVERSION) unfoldInversion();
 }

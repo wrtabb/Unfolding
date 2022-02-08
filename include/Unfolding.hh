@@ -42,18 +42,26 @@ class Unfold
 		};
 		//-----Functions-----//
 
-        /// Constructed for Unfold
+        /**
+        * \\Blank constructor for unfold
+        * All necessary parameters can be set later
+        * Necessary parameters:
+        * reconstructed or observed histogram
+        * true histogram
+        * migration matrix
+        * RegType regType defined the regularization to be used
+        */
 		Unfold();
-		Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix);
-        /** 
-         * \\Performs the unfolding using TUnfold
-         * RegType regType is the type of regularization to be used
-         * TH1F*hReco is the reconstructed distribution and must have more bins than hTrue
-         * TH1F*hTrue is the true or gen-level distributions
-         * TH2F*hMatrix is the matrix of migrations for unfolding. 
-         * This does not need to be normalized
-         */ 
-		void unfoldTUnfold(RegType regType);
+        /**
+        * \\Constructor for unfold
+        * hReco is observed or reconstructed histogram
+        * hTrue is true histogram
+        * hMatrix is matrix of migrations
+        * regType is the regularization type to be used
+        * */
+		Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType);
+
+        void DoUnfold(UnfoldType unfoldType);
         /**
          * \\ Produces plot of unfolded distribution with true and reco distributions
              * TString canvasName is the name given to the TCanvas
@@ -73,7 +81,7 @@ class Unfold
          * This helps us figure out if we need to use regularization or not
          * Small enough condition numbers mean no regularization is needed
          */
-		double GetConditionNumber(TH2F*hResponse);
+		double GetConditionNumber();
 
         /**
          * \\Normalizes the migration matrix to create the response matrix
@@ -110,14 +118,6 @@ class Unfold
 		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
 
         /**
-         * \\Carries out unfolding using the inversion method
-         * TH1F*hReco is reconstructed histogram
-         * TH1F*hTrue is the true histogram
-         * TH2F*hMatrix is the migration matrix
-         */
-		TH1F*unfoldInversion(TH1F*hReco,TH1F*hTrue,TH2F*hResponse);
-
-        /**
          * \\Makes plot of a 2D histogram
          * TH2F*hmatrix is the matrix to be plotted
          * TString saveName is the save name for the plot
@@ -128,6 +128,7 @@ class Unfold
 
         void SetReco(TH1F*hist);
         void SetTrue(TH1F*hist);
+        void SetRegularizationType(RegType regType);
         void SetBackground(TH1F*hist);
         void SetMatrix(TH2F*hist);
         double ReturnCondition();
@@ -146,6 +147,7 @@ class Unfold
 		int _nBinsTrue;
         bool _trueVert;
         bool _backgroundSubtraction = false;
+        RegType _regType;
 
         //-----Histograms-----//
         TH1F*_hReco;
@@ -155,7 +157,17 @@ class Unfold
         TH1F*_hUnfolded;
         TH2F*_hMatrix;
         TH2F*_hResponse;
-		
+        TH2F*_hResponseSquare;
+	    //-----Functions-----//	
+        /** 
+         * \\Performs the unfolding using TUnfold
+         */ 
+		void unfoldTUnfold();
+
+        /**
+         * \\Carries out unfolding using the inversion method
+         */
+		void unfoldInversion();
 };//end class Unfold
 
 #endif

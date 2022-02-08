@@ -58,6 +58,10 @@ namespace Utilities{
 
 	TH2F*RebinTH2(TH2F*hist,TString histName,TH1F*hBinning)
 	{
+        // This function assumes that the x-axis is the one to be rebinned
+        // This is the case with my setup, but may not always be true
+        // This should be made more general
+        
 		int nBinsOld = hist->GetNbinsX();
 		int nBinsNew = hBinning->GetNbinsX();
 		if(nBinsNew > nBinsOld){
