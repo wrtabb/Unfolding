@@ -6,30 +6,23 @@ Unfold::Unfold()
 
 }
 
-Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType)
+Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType=NO_REG)
 {
     // calclate global parameters
     _hReco = hReco; // reconstructed distribution
     _hTrue = hTrue; // true distribution
     _hMatrix = hMatrix;// matrix of migrations
+
+    // Determine if true distribution is on the vertical or horizontal axis
+    int nBinsY = _hMatrix->GetNbinsY();
+    if(nBinsY == _nBinsTrue) _trueVert = true;
+
     makeResponseMatrix(_hMatrix); // normalized migration matrix
-    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue);
-    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    cout << "response matrix x-axis bins: " << _hResponse->GetNbinsY() << endl;
-    cout << "square matrix x-axis bins: " << _hResponseSquare->GetNbinsY() << endl;
-    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-    cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
     _condition = GetConditionNumber(); // condition number
     _nBinsReco = _hReco->GetNbinsX(); // number of reco bins
     _nBinsTrue = _hTrue->GetNbinsX(); // number of true bins
     _regType = regType; // regularization type
-
-    // Determine if true distribution is on the vertical or horizontal axis
-    int nBinsX = _hMatrix->GetNbinsX();
-    int nBinsY = _hMatrix->GetNbinsY();
-    if(nBinsY == _nBinsTrue) _trueVert = true;
-    else if(nBinsY == _nBinsReco) _trueVert = false;
 
     if(_nBinsReco==_nBinsTrue){
         cout << "For TUnfold, the observed histogram must have more bins than the true histogram" << endl;
@@ -397,7 +390,7 @@ void Unfold::unfoldInversion()
 	//For inversion method, we need the matrix to be square
 	//So here the reco and matrix are rebinned
 	TH1F*hist1 = RebinTH1(hist1_oldBinning,"hRecoRebin",_hTrue);
-	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",_hTrue);
+	TH2F*hist3 = RebinTH2(hist3_oldBinning,"hMatrixRebin",_hTrue,_trueVert);
 	int nBins = hist2->GetNbinsX();
 
 	//Make Vy, input covariance assuming for now that it is diagonal
@@ -471,7 +464,7 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 		xPosition = 15;
 		yPosition = 5;
 		conditionLabel = new TLatex(xPosition,yPosition,
-                                	    Form("condition number = %lg",_condition));
+                                    Form("condition number = %lg",_condition));
 		conditionLabel->Draw("same");
 	}
 
@@ -491,7 +484,7 @@ void Unfold::SetMatrix(TH2F*hist)
 {
     _hMatrix = hist;
     makeResponseMatrix(_hMatrix); // normalized migration matrix
-    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue);
+    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
     int nBinsX = _hMatrix->GetNbinsX();
     int nBinsY = _hMatrix->GetNbinsY();
 
@@ -538,6 +531,16 @@ TH1F*Unfold::ReturnUnfolded()
 TH2F*Unfold::ReturnResponseMatrix()
 {
     return _hResponse;
+}
+
+TH2F*Unfold::ReturnSquareResponseMatrix()
+{
+    if(_hResponseSquare!=NULL)
+    return _hResponseSquare;
+    else{
+        cout << "ERROR: hResponseSquare is not defined. Make sure to set the migratio matrix first using 'SetMatrix(TH2F*hMatrix)'" << endl;
+        return _hResponseSquare;
+    }
 }
 
 TH1F*Unfold::ReturnReco()

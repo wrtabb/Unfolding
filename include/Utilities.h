@@ -5,6 +5,7 @@
 #include <TH2F.h>
 
 namespace Utilities{
+
 	TH1F*RebinTH1(TH1F*hist,TString histName,TH1F*hBinning)
 	{
 		int nBinsOld = hist->GetNbinsX();
@@ -56,12 +57,8 @@ namespace Utilities{
 
 	}// end Rebin1D
 
-	TH2F*RebinTH2(TH2F*hist,TString histName,TH1F*hBinning)
+	TH2F*RebinTH2X(TH2F*hist,TString histName,TH1F*hBinning)
 	{
-        // This function assumes that the x-axis is the one to be rebinned
-        // This is the case with my setup, but may not always be true
-        // This should be made more general
-        
 		int nBinsOld = hist->GetNbinsX();
 		int nBinsNew = hBinning->GetNbinsX();
 		if(nBinsNew > nBinsOld){
@@ -114,7 +111,71 @@ namespace Utilities{
 		}// end i loop
 		return hRebin;
 
-	}// end Rebin2D
+	}// end Rebin2DX
+
+	TH2F*RebinTH2Y(TH2F*hist,TString histName,TH1F*hBinning)
+	{
+		int nBinsOld = hist->GetNbinsY();
+		int nBinsNew = hBinning->GetNbinsX();
+		if(nBinsNew > nBinsOld){
+			cout << "*********************************************************" << endl;
+			cout << "ERROR: new binning must have fewer bins than old binning!" << endl;
+			cout << "*********************************************************" << endl;
+			return hist;
+		}
+		else if(nBinsNew == nBinsOld){
+			cout << "************************************************" << endl;
+			cout << "Histogram already has the same binning as source" << endl;
+			cout << "Returning histogram" << endl;
+			cout << "************************************************" << endl;
+			return hist;
+		}
+
+		double newbinning[nBinsNew];
+		for(int i=0;i<=nBinsNew;i++){
+			if(i==0) newbinning[i] = hBinning->GetBinLowEdge(i+1);
+			else newbinning[i] = newbinning[i-1]+hBinning->GetBinWidth(i);
+		}
+		TH2F*hRebin = new TH2F(histName,"",nBinsNew,newbinning,nBinsNew,newbinning);
+		double y,x;
+		double nEntries;
+		for(int i=0;i<=nBinsOld+1;i++){//y loop
+			y = hist->GetYaxis()->GetBinCenter(i);
+			for(int j=0;j<=nBinsNew+1;j++){//x loop
+				x = hist->GetXaxis()->GetBinCenter(j);
+				nEntries = hist->GetBinContent(j,i);
+				hRebin->Fill(x,y,nEntries);
+			}//end y bin loop
+		} //end x bin loop
+
+		double histBinWidth;
+		double newBinWidth;
+		double nBinsOldInNew[nBinsNew];
+		double newBinUpperEdge,oldBinUpperEdge;
+		int k = 1;
+		for(int i=1;i<=nBinsNew;i++){
+			newBinUpperEdge = hBinning->GetBinLowEdge(i)+hBinning->GetBinWidth(i);
+			double newError2 = 0;
+			for(int j=k;j<=nBinsOld;j++){
+				oldBinUpperEdge = hist->GetXaxis()->GetBinLowEdge(j) +
+						  hist->GetXaxis()->GetBinWidth(j);
+				if(oldBinUpperEdge > newBinUpperEdge) continue;
+				k = j;
+				newError2 += hist->GetBinError(j,i)*hist->GetBinError(j,i);
+				hRebin->SetBinError(j,i,sqrt(newError2));
+			}// end j loop
+		}// end i loop
+		return hRebin;
+
+	}// end Rebin2DY
+
+    TH2F*RebinTH2(TH2F*hist,TString histName,TH1F*hBinning,bool trueVert)
+    {
+        using namespace Utilities;
+        if(trueVert) return RebinTH2X(hist,histName,hBinning);
+        else return RebinTH2Y(hist,histName,hBinning);
+    }
+
 }//end namespace
 
 #endif

@@ -134,6 +134,7 @@ class Unfold
         double ReturnCondition();
         TH1F*ReturnUnfolded();
         TH2F*ReturnResponseMatrix();
+        TH2F*ReturnSquareResponseMatrix();
         TH1F*ReturnReco();
         TH1F*ReturnTrue();
         TH1F*ReturnBackground();
@@ -145,7 +146,7 @@ class Unfold
 		double _condition;
 		int _nBinsReco;
 		int _nBinsTrue;
-        bool _trueVert;
+        bool _trueVert = false;
         bool _backgroundSubtraction = false;
         RegType _regType;
 
