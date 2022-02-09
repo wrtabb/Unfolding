@@ -35,11 +35,12 @@ class Unfold
             VAR_REG_SCANSURE, //TUnfoldDensity determines choice of regularization strength
             VAR_REG_SCANTAU   //TUnfoldDensity determines choice of regularization strength
 		};
-		enum UnfoldType {
-            TUNFOLD,
-            INVERSION,
-            DNN
+		enum UnfoldType{    // Type of unfolding
+            TUNFOLD,        // TUnfold (the primary method for this study)
+            INVERSION,      // Matrix inversion method
+            DNN             // Deep neural network (not implemented for this study)
 		};
+
 		//-----Functions-----//
 
         /**
@@ -51,6 +52,7 @@ class Unfold
         * migration matrix
         * RegType regType defined the regularization to be used
         */
+
 		Unfold();
         /**
         * \\Constructor for unfold
@@ -61,23 +63,26 @@ class Unfold
         * */
 		Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType);
 
-        void DoUnfold(UnfoldType unfoldType);
+        /**
+        * \\ Carries out the unfolding
+        * unfoldType is the type of unfolding to be done
+        * unfoldType must be: TUNFOLD, INVERSION, or DNN 
+        * DNN not implemented
+        */
+        void EngageUnfolding(UnfoldType unfoldType);
+
         /**
          * \\ Produces plot of unfolded distribution with true and reco distributions
-             * TString canvasName is the name given to the TCanvas
-             * TString titleName is the title printed at the top of the plot
-         * TH1F*hReco is the reconstructed distribution
-         * TH1F*hTrue is the true distribution
-         * TH1F*hUnfolded is the unfolded distribution
+         * TString canvasName is the name given to the TCanvas
+         * TString titleName is the title printed at the top of the plot
          * bool logPlot determines if the x-axis is defined on a log scale or not
          */
 		TCanvas*plotUnfolded(TString canvasName,TString titleName,bool logPlot);
+
         /**
          * \\Calculates the condition number of the response matrix
-         * TH2F*hResponse is the response matrix
          * This function obtains the condition number of the response matrix
          * This is important because it tells us about how diagonal the matrix is
-         * which gives an idea of how well unfolding will work
          * This helps us figure out if we need to use regularization or not
          * Small enough condition numbers mean no regularization is needed
          */
@@ -86,33 +91,26 @@ class Unfold
         /**
          * \\Normalizes the migration matrix to create the response matrix
          * TH2F*hist is the migration matrix
-         * bool trueVert is true if the true distribution is on the y-axis
-         * bool trueVert is false if the true distribution is on the x-axis
-         * Currently this only normalizes rows, but may add functionality to do both
-         * For now place true distribution along y-axis and reco along x-axis
+         * The axis to be normalized along is determined automatically
          */ 
 		void makeResponseMatrix(TH2F*hist);
 
         /**
          * \\Make a matrix from a given 2D histogram
          * TH2F*hist is the histogram to be made into a matrix
-         * This is used because for the inversion method of unfolding
-         * TMatrixD objects are used for the calculations
          */
 		TMatrixD makeMatrixFromHist(TH2F*hist);
 
         /**
          * \\Make a vector from a given 1D histogram
          * TH1F*hist is the histogram to be made into a vector
-         * This is used because for the inversion method of unfolding
-         * TVectorD objects are used for the calculations
          */
 		TVectorD makeVectorFromHist(TH1F*hist);
 
         /**
          * \\Makes a 1D histogram from a vector
-         * TVectorD vec is the vector to be made into a histogram
          * Takes a TVectorD object and returns a histogram
+         * TVectorD vec is the vector to be made into a histogram
          * TH1F*hist is used to get the desired binning correct
          */
 		TH1F*makeHistFromVector(TVectorD vec,TH1F*hist);
@@ -126,18 +124,82 @@ class Unfold
          */
 		void plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition);
 
+        /*
+         * \\ Sets the reco or observed distribution for unfolding
+         * hist is the reco distribution
+         * This function is only needed if it wasn't set by the constructor
+         */ 
         void SetReco(TH1F*hist);
+
+        /*
+         * \\ Sets the true distribution for unfolding
+         * hist is the true distribution
+         * This function is only needed if it wasn't set by the constructor
+         */ 
         void SetTrue(TH1F*hist);
+
+        /*
+         * \\ Sets the type of regularization to be used
+         * regTypes are: 
+         * NO_REG (default)  //No regularization used
+         * CONST_REG,        //User defined regularization
+         * VAR_REG_LCURVE,   //TUnfoldDensity determines choice of regularization strength
+         * VAR_REG_SCANSURE, //TUnfoldDensity determines choice of regularization strength
+         * VAR_REG_SCANTAU   //TUnfoldDensity determines choice of regularization strength
+         */
         void SetRegularizationType(RegType regType);
+
+        /*
+         * \\ Sets the background distribution
+         * hist is a histogram of all backgrounds summed together
+         */ 
         void SetBackground(TH1F*hist);
+
+        /*
+         * \\ Sets the migration matrix for unfolding
+         * hist is the 2D histogram of the migration matrix
+         * This function is only needed if it wasn't set by the constructor
+         */ 
         void SetMatrix(TH2F*hist);
+
+        /*
+         * \\Returns the condition number of the response matrix
+         */   
         double ReturnCondition();
+
+        /*
+         * \\Returns the unfolded distribution 
+         */   
         TH1F*ReturnUnfolded();
+
+        /*
+         * \\Returns the response matrix which is the normalized migration matrix
+         */   
         TH2F*ReturnResponseMatrix();
+
+        /*
+         * \\Returns the response matrix rebinned to be a square matrix 
+         */   
         TH2F*ReturnSquareResponseMatrix();
+
+        /*
+         * \\Returns the reco distribution 
+         */   
         TH1F*ReturnReco();
+
+        /*
+         * \\Returns the true distribution 
+         */   
         TH1F*ReturnTrue();
+
+        /*
+         * \\Returns the background distribution 
+         */   
         TH1F*ReturnBackground();
+
+        /*
+         * \\Returns the migration matrix 
+         */   
         TH2F*ReturnMatrix();
 
     private:
@@ -159,6 +221,7 @@ class Unfold
         TH2F*_hMatrix;
         TH2F*_hResponse;
         TH2F*_hResponseSquare;
+
 	    //-----Functions-----//	
         /** 
          * \\Performs the unfolding using TUnfold

@@ -30,6 +30,16 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType=NO_REG)
         cout << "Output bins: " << _nBinsTrue << endl;
     }
 }
+void Unfold::EngageUnfolding(UnfoldType unfoldType)
+{
+    if(unfoldType==TUNFOLD) unfoldTUnfold();
+    else if(unfoldType==INVERSION) unfoldInversion();
+    else if(unfoldType==DNN){
+        cout << "DNN is not implemented for this study" << endl;
+        cout << "Chose TUNFOLD or INVERSION" << endl;
+        return;
+    }
+}
 
 void Unfold::unfoldTUnfold()
 {
@@ -346,10 +356,10 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
         cout << endl;
     }
 
-	TMatrixD matrix(nBinsY+2,nBinsX+2);
-	for(int i=0;i<=nBinsX+1;i++){
-		for(int j=0;j<=nBinsY+1;j++){
-			matrix(j,i) = hist->GetBinContent(i,j);
+	TMatrixD matrix(nBinsY,nBinsX);
+	for(int i=1;i<=nBinsX;i++){
+		for(int j=1;j<=nBinsY;j++){
+			matrix(j-1,i-1) = hist->GetBinContent(i,j);
 		}
 	}
 	return matrix;
@@ -468,9 +478,7 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 		conditionLabel->Draw("same");
 	}
 
-	TString saveDirectory = "./plots/";
-	TString save = saveDirectory+saveName+".png";
-	canvas->SaveAs(save);	
+	canvas->SaveAs(saveName);	
 	delete canvas;
 }
 
@@ -563,10 +571,4 @@ TH1F*Unfold::ReturnBackground()
 TH2F*Unfold::ReturnMatrix()
 {
     return _hMatrix;
-}
-
-void Unfold::DoUnfold(UnfoldType unfType)
-{
-    if(unfType == TUNFOLD) unfoldTUnfold();
-    else if(unfType == INVERSION) unfoldInversion();
 }
