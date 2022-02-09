@@ -86,7 +86,7 @@ class Unfold
          * This helps us figure out if we need to use regularization or not
          * Small enough condition numbers mean no regularization is needed
          */
-		double GetConditionNumber();
+		void SetConditionNumber();
 
         /**
          * \\Normalizes the migration matrix to create the response matrix
@@ -161,6 +161,12 @@ class Unfold
          * This function is only needed if it wasn't set by the constructor
          */ 
         void SetMatrix(TH2F*hist);
+
+        /*
+         * \\ Sets the attributes for the response matrix 
+         * hist is the 2D histogram of the repsonse matrix
+         */ 
+        void SetMatrixPlotAttributes(TH2F*hist);
 
         /*
          * \\Returns the condition number of the response matrix

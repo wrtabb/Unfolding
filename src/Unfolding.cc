@@ -18,8 +18,11 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType=NO_REG)
     if(nBinsY == _nBinsTrue) _trueVert = true;
 
     makeResponseMatrix(_hMatrix); // normalized migration matrix
+    SetMatrixPlotAttributes(_hResponse);
     _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
-    _condition = GetConditionNumber(); // condition number
+    SetMatrixPlotAttributes(_hResponseSquare);
+
+    SetConditionNumber(); // condition number
     _nBinsReco = _hReco->GetNbinsX(); // number of reco bins
     _nBinsTrue = _hTrue->GetNbinsX(); // number of true bins
     _regType = regType; // regularization type
@@ -279,7 +282,7 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
     return canvas;
 }//end plotUnfolded
 
-double Unfold::GetConditionNumber()
+void Unfold::SetConditionNumber()
 {
 	TMatrixD matrix = makeMatrixFromHist(_hResponseSquare);
 
@@ -290,8 +293,7 @@ double Unfold::GetConditionNumber()
 	double determinant;
 	TMatrixD mInverse = matrix.Invert(&determinant);
 	cout << "The determinant: " << determinant << endl;
-	return _condition;
-}//end GetConditionNumber
+}//end SetConditionNumber
 
 void Unfold::makeResponseMatrix(TH2F*hist)
 {
@@ -344,6 +346,24 @@ void Unfold::makeResponseMatrix(TH2F*hist)
     }// end if !trueVert
     _hResponse = hResponse;
 }//end makeResponseMatrix
+
+void Unfold::SetMatrixPlotAttributes(TH2F*hist)
+{
+    if(_trueVert){
+        hist->GetXaxis()->SetTitle("m_{ll}^{reco} [GeV]");
+        hist->GetYaxis()->SetTitle("m_{ll}^{true} [GeV]");
+    }
+    else{
+        hist->GetXaxis()->SetTitle("m_{ll}^{true} [GeV]");
+        hist->GetYaxis()->SetTitle("m_{ll}^{reco} [GeV]");
+    }
+    hist->SetTitle("response matrix");
+    hist->GetZaxis()->SetRangeUser(0.0,1.0);
+    hist->GetXaxis()->SetNoExponent();
+    hist->GetXaxis()->SetMoreLogLabels();
+    hist->GetYaxis()->SetNoExponent();
+    hist->GetYaxis()->SetMoreLogLabels();
+}
 
 TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
 {
@@ -417,8 +437,7 @@ void Unfold::unfoldInversion()
 	
 	int nBinsTrue = hist2->GetNbinsX();
 	int nBinsReco = hist1->GetNbinsX();
-	double conditionNumber = _condition;
-	cout << "Condition number: " << conditionNumber << endl;
+	cout << "Condition number: " << _condition << endl;
 	cout << "Number of output bins: " << nBinsTrue << endl;
 	cout << "Number of input bins: " << nBinsReco << endl;
 
@@ -470,9 +489,9 @@ void Unfold::plotMatrix(TH2F*hMatrix,TString saveName,bool printCondition)
 	canvas->SetLeftMargin(0.15);
 	hMatrix->Draw("colz");
 	
-	if(printCondition){ _condition = GetConditionNumber();
-		xPosition = 15;
-		yPosition = 5;
+	if(printCondition){ 
+		xPosition = 30;
+		yPosition = 20;
 		conditionLabel = new TLatex(xPosition,yPosition,
                                     Form("condition number = %lg",_condition));
 		conditionLabel->Draw("same");
