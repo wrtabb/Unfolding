@@ -19,7 +19,6 @@ Unfold::Unfold(TH1F*hReco,TH1F*hTrue,TH2F*hMatrix,RegType regType=NO_REG)
 
     makeResponseMatrix(_hMatrix); // normalized migration matrix
     SetMatrixPlotAttributes(_hResponse);
-    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
     SetMatrixPlotAttributes(_hResponseSquare);
 
     SetConditionNumber(); // condition number
@@ -284,7 +283,9 @@ TCanvas*Unfold::plotUnfolded(TString canvasName,TString titleName,bool logPlot)
 
 void Unfold::SetConditionNumber()
 {
-	TMatrixD matrix = makeMatrixFromHist(_hResponseSquare);
+    bool underflow = true;
+    bool overflow = false;
+	TMatrixD matrix = makeMatrixFromHist(_hResponseSquare,underflow,overflow);
 
 	TDecompSVD decomp(matrix);
 	_condition = decomp.Condition();
@@ -293,6 +294,7 @@ void Unfold::SetConditionNumber()
 	double determinant;
 	TMatrixD mInverse = matrix.Invert(&determinant);
 	cout << "The determinant: " << determinant << endl;
+    _determinant = determinant;
 }//end SetConditionNumber
 
 void Unfold::makeResponseMatrix(TH2F*hist)
@@ -307,7 +309,7 @@ void Unfold::makeResponseMatrix(TH2F*hist)
 
     // true distribution on y-axis
     // reco distribution on x-axis
-    if(trueVert){
+    if(_trueVert){
         //Loop over all true bins (the y-axis)
         for(int j=0;j<=nBinsY+1;j++){
             nEntriesX = 0.0;
@@ -323,7 +325,7 @@ void Unfold::makeResponseMatrix(TH2F*hist)
                 hResponse->SetBinContent(i,j,scaledContent);
             }//end second loop over reco bins
         }//end loop over true bins
-    }// end if trueVert
+    }// end if _trueVert
 
     // true distribution on x-axis
     // reco distribution on y-axis
@@ -345,6 +347,7 @@ void Unfold::makeResponseMatrix(TH2F*hist)
         }//end loop over true bins
     }// end if !trueVert
     _hResponse = hResponse;
+    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
 }//end makeResponseMatrix
 
 void Unfold::SetMatrixPlotAttributes(TH2F*hist)
@@ -365,10 +368,21 @@ void Unfold::SetMatrixPlotAttributes(TH2F*hist)
     hist->GetYaxis()->SetMoreLogLabels();
 }
 
-TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
+TMatrixD Unfold::makeMatrixFromHist(TH2F*hist,bool underflow,bool overflow)
 {
 	int nBinsX = hist->GetNbinsX();
 	int nBinsY = hist->GetNbinsY();
+    int firstBin = 1;
+
+    if(underflow){
+        nBinsX++;
+        nBinsY++;
+        firstBin = 0;
+    }
+    if(overflow){
+        nBinsX++;
+        nBinsY++;
+    }
     if(nBinsX!=nBinsY){
         cout << endl;
         cout << "x and y bins do not match" << endl;
@@ -377,9 +391,9 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist)
     }
 
 	TMatrixD matrix(nBinsY,nBinsX);
-	for(int i=1;i<=nBinsX;i++){
-		for(int j=1;j<=nBinsY;j++){
-			matrix(j-1,i-1) = hist->GetBinContent(i,j);
+	for(int i=firstBin;i<=nBinsX;i++){
+		for(int j=firstBin;j<=nBinsY;j++){
+			matrix(j,i) = hist->GetBinContent(i,j);
 		}
 	}
 	return matrix;
@@ -442,7 +456,13 @@ void Unfold::unfoldInversion()
 	cout << "Number of input bins: " << nBinsReco << endl;
 
 	//Turn histograms into matrices and vectors
-	TMatrixD responseM = makeMatrixFromHist(hist3);
+	bool underflow = true;
+    // True distribution has all zeroes in the overflow
+    // This means the matrix will have a full row of zeroes
+    // This makes the determinant equal to 0
+    // And matrix inversion does not work properly
+    bool overflow = false; 
+	TMatrixD responseM = makeMatrixFromHist(hist3,underflow,overflow);
 	TVectorD trueV = makeVectorFromHist(hist2);
 	TVectorD recoV = makeVectorFromHist(hist1);
 
@@ -510,13 +530,10 @@ void Unfold::SetBackground(TH1F*hist)
 void Unfold::SetMatrix(TH2F*hist)
 {
     _hMatrix = hist;
-    makeResponseMatrix(_hMatrix); // normalized migration matrix
-    _hResponseSquare = RebinTH2(_hResponse,"hResponseSquare",_hTrue,_trueVert);
-    int nBinsX = _hMatrix->GetNbinsX();
     int nBinsY = _hMatrix->GetNbinsY();
-
-    if(nBinsY == _nBinsTrue) _trueVert = true;
-    else if(nBinsY == _nBinsReco) _trueVert = false;
+    int nBinsX = _hMatrix->GetNbinsX();
+    if(nBinsX>nBinsY) _trueVert = true;
+    makeResponseMatrix(_hMatrix); // normalized migration matrix
 
     if(_trueVert){
         _nBinsReco = hist->GetNbinsX();
@@ -547,36 +564,55 @@ void Unfold::SetRegularizationType(RegType regType)
 
 double Unfold::ReturnCondition()
 {
+    if(_condition<-1)
+        cout << "ERROR: condition value not defined. You must set the migration matrix first" << endl;
     return _condition;
+}
+
+double Unfold::ReturnDeterminant()
+{
+    if(_determinant<-1)
+        cout << "ERROR: determinant value not defined. You must set the migration matrix first" << endl;
+    return _determinant;
+}
+
+bool Unfold::ReturnTrueVert()
+{
+    return _trueVert;
 }
 
 TH1F*Unfold::ReturnUnfolded()
 {
+    if(_hUnfolded == NULL)
+        cout << "ERROR: hUnfolded is not defined. Unfolding must be carried out before you can get the unfolded matrix" << endl;
     return _hUnfolded;
 }
 
 TH2F*Unfold::ReturnResponseMatrix()
 {
+    if(_hResponse == NULL)
+        cout << "ERROR: hResponse is not defined. Make sure to set the migration matrix first using 'SetMatrix(TH2F*hMatrix)'" << endl;
     return _hResponse;
 }
 
 TH2F*Unfold::ReturnSquareResponseMatrix()
 {
-    if(_hResponseSquare!=NULL)
+    if(_hResponseSquare == NULL)
+        cout << "ERROR: hResponseSquare is not defined. Make sure to set the migration matrix first using 'SetMatrix(TH2F*hMatrix)'" << endl;
     return _hResponseSquare;
-    else{
-        cout << "ERROR: hResponseSquare is not defined. Make sure to set the migratio matrix first using 'SetMatrix(TH2F*hMatrix)'" << endl;
-        return _hResponseSquare;
-    }
 }
 
 TH1F*Unfold::ReturnReco()
 {
+    if(_hReco == NULL)
+        cout << "ERROR: hReco not defined. You need to set it using SetReco(TH1F*hist)" << endl;
     return _hReco;
 }
 
 TH1F*Unfold::ReturnTrue()
 {
+    if(_hTrue == NULL)
+        cout << "ERROR: hTrue not defined. You need to set it using SetTrue(TH1F*hist)" << endl;
     return _hTrue;
 }
 
@@ -589,5 +625,7 @@ TH1F*Unfold::ReturnBackground()
 
 TH2F*Unfold::ReturnMatrix()
 {
+    if(_hMatrix == NULL)
+        cout << "ERROR: hMatrix not defined. You need to set it using SetMatrix(TH2F*hist)" << endl;
     return _hMatrix;
 }

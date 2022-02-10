@@ -99,7 +99,7 @@ class Unfold
          * \\Make a matrix from a given 2D histogram
          * TH2F*hist is the histogram to be made into a matrix
          */
-		TMatrixD makeMatrixFromHist(TH2F*hist);
+		TMatrixD makeMatrixFromHist(TH2F*hist,bool underflow,bool overflow);
 
         /**
          * \\Make a vector from a given 1D histogram
@@ -174,6 +174,11 @@ class Unfold
         double ReturnCondition();
 
         /*
+         * \\Returns the determinant of the response matrix
+         */   
+        double ReturnDeterminant();
+
+        /*
          * \\Returns the unfolded distribution 
          */   
         TH1F*ReturnUnfolded();
@@ -208,25 +213,27 @@ class Unfold
          */   
         TH2F*ReturnMatrix();
 
+        bool ReturnTrueVert();
     private:
 		//-----Variables-----//
-		double _mean;
-		double _condition;
-		int _nBinsReco;
-		int _nBinsTrue;
+		double _condition   = -1000;
+        double _determinant = -1000;
+		int _nBinsReco      = -1000;
+		int _nBinsTrue      = -1000;
+
         bool _trueVert = false;
         bool _backgroundSubtraction = false;
-        RegType _regType;
+        RegType _regType = NO_REG;
 
         //-----Histograms-----//
-        TH1F*_hReco;
-        TH1F*_hTrue;
-        TH1F*_hBack;
-        TH1F*_hBlank;
-        TH1F*_hUnfolded;
-        TH2F*_hMatrix;
-        TH2F*_hResponse;
-        TH2F*_hResponseSquare;
+        TH1F*_hReco             = NULL;
+        TH1F*_hTrue             = NULL;
+        TH1F*_hBack             = NULL;
+        TH1F*_hBlank            = NULL;
+        TH1F*_hUnfolded         = NULL;
+        TH2F*_hMatrix           = NULL;
+        TH2F*_hResponse         = NULL;
+        TH2F*_hResponseSquare   = NULL;
 
 	    //-----Functions-----//	
         /** 
