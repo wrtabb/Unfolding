@@ -391,9 +391,9 @@ TMatrixD Unfold::makeMatrixFromHist(TH2F*hist,bool underflow,bool overflow)
     }
 
 	TMatrixD matrix(nBinsY,nBinsX);
-	for(int i=firstBin;i<=nBinsX;i++){
-		for(int j=firstBin;j<=nBinsY;j++){
-			matrix(j,i) = hist->GetBinContent(i,j);
+	for(int i=firstBin;i<nBinsX;i++){
+		for(int j=firstBin;j<nBinsY;j++){
+			matrix(j-firstBin,i-firstBin) = hist->GetBinContent(i,j);
 		}
 	}
 	return matrix;
